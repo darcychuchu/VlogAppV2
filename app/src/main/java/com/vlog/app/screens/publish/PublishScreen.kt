@@ -1,4 +1,4 @@
-package com.vlog.app.screens.profile
+package com.vlog.app.screens.publish
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +15,7 @@ import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(
+fun PublishScreen(
     modifier: Modifier = Modifier,
     navController: NavController? = null
 ) {
@@ -32,7 +32,7 @@ fun ProfileScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "Profile",
+                                text = "Publish",
                                 modifier = Modifier.padding(8.dp)
                             )
                         }
@@ -48,7 +48,7 @@ fun ProfileScreen(
                 .padding(paddingValues)
         ) {
             Text(
-                text = "Profile",
+                text = "Publish",
                 modifier = Modifier.padding(8.dp)
             )
 

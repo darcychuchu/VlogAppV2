@@ -25,6 +25,12 @@ sealed class BottomNavItem(
         icon = Icons.Default.Star
     )
 
+//    object Subscript : BottomNavItem(
+//        route = "Subscript",
+//        title = "小程序",
+//        icon = Icons.Default.Star
+//    )
+
     object Publish : BottomNavItem(
         route = "publish",
         title = "发布",

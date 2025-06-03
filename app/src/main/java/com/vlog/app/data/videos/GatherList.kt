@@ -1,4 +1,4 @@
-package com.vlog.app.data.model
+package com.vlog.app.data.videos
 
 data class GatherList(
     var gatherId: String,

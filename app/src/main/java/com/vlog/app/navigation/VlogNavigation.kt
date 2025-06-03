@@ -113,6 +113,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Videos,
+        //BottomNavItem.Subscript,
         BottomNavItem.Publish,
         BottomNavItem.Subscribe,
         BottomNavItem.Profile
