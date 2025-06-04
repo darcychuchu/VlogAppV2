@@ -12,20 +12,29 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.vlog.app.screens.favorites.FavoritesScreen
 import com.vlog.app.screens.home.HomeScreen
 import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserViewModel
+import com.vlog.app.screens.videos.VideoDetailScreen
+import com.vlog.app.screens.videos.VideosScreen
 
 sealed class Screen(val route: String) {
     // 认证相关页面
     object Login : Screen("login")
     object Register : Screen("register")
 
+    // 视频相关页面
+    object VideoDetail : Screen("video_detail/{videoId}") {
+        fun createRoute(videoId: String) = "video_detail/$videoId"
+    }
 }
 
 @Composable
@@ -95,6 +104,41 @@ fun VlogNavigation() {
                     navController = navController
                 )
             }
+
+            composable(BottomNavItem.Videos.route) {
+                VideosScreen(
+                    navController = navController
+                )
+            }
+
+            composable(BottomNavItem.Subscribe.route) {
+                FavoritesScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onVideoClick = { videoId ->
+                        navController.navigate(Screen.VideoDetail.createRoute(videoId))
+                    }
+                )
+            }
+
+
+            // 视频详情页面
+            composable(
+                route = Screen.VideoDetail.route,
+                arguments = listOf(
+                    navArgument("videoId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+                VideoDetailScreen(
+                    videoId = videoId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
 
 
         }

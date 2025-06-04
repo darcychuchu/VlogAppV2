@@ -2,6 +2,7 @@ package com.vlog.app.data.videos
 
 data class VideoDetail(
     var id: String? = null,
+    val version: Int? = null,
     var isTyped: Int? = null,
     var publishedAt: String? = null,
     var categoryId: String? = null,

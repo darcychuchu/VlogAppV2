@@ -88,4 +88,8 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.ui)
+    // Material Icons Extended
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.swiperefresh)
+
 }

@@ -1,12 +1,20 @@
 package com.vlog.app.di
 
+import android.content.Context
 import android.os.Build
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.vlog.app.data.database.VlogDatabase
+import com.vlog.app.data.favorites.FavoriteService
+import com.vlog.app.data.favorites.FavoriteVideoDao
 import com.vlog.app.data.users.UserService
+import com.vlog.app.data.videos.CategoryDao
+import com.vlog.app.data.videos.VideoDao
+import com.vlog.app.data.videos.VideoService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -71,5 +79,38 @@ object NetworkModule {
         return retrofit.create(UserService::class.java)
     }
 
+    @Provides
+    @Singleton
+    fun provideVlogDatabase(@ApplicationContext context: Context): VlogDatabase {
+        return VlogDatabase.getDatabase(context)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideVideoService(retrofit: Retrofit): VideoService {
+        return retrofit.create(VideoService::class.java)
+    }
+
+    @Provides
+    fun provideVideoDao(database: VlogDatabase): VideoDao {
+        return database.videoDao()
+    }
+
+    @Provides
+    fun provideCategoryDao(database: VlogDatabase): CategoryDao {
+        return database.categoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFavoriteService(retrofit: Retrofit): FavoriteService {
+        return retrofit.create(FavoriteService::class.java)
+    }
+
+    @Provides
+    fun provideFavoriteVideoDao(database: VlogDatabase): FavoriteVideoDao {
+        return database.favoriteVideoDao()
+    }
 
 }

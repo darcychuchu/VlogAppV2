@@ -100,6 +100,7 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val response = userRepository.register(username, password, nickname)
+                Log.d("register", response.toString())
                 if (response.code == 200 && response.data != null) {
                     // 注册成功，保存用户信息
                     userDataRepository.updateCurrentUser(response.data)

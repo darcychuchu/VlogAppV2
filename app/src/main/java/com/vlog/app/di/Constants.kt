@@ -2,7 +2,7 @@ package com.vlog.app.di
 
 object Constants {
 
-    const val VLOG_APP = "https://api.66log.com"
+    const val VLOG_APP = "http://192.168.43.239:8199"
     const val API_BASE_URL = "${VLOG_APP}/api/json/v2/"
 
     const val APP_VERSION = "1.0.0"
@@ -26,4 +26,11 @@ object Constants {
     const val ENDPOINT_FILTER_LIST = "videos/list"
     const val ENDPOINT_CATEGORIES = "videos/categories"
     const val ENDPOINT_SEARCH = "videos/search"
+
+    // favorites
+    const val ENDPOINT_FAVORITES_LIST = "videos/favorites/{username}"
+    const val ENDPOINT_FAVORITES_CREATE = "videos/favorites-created/{videoId}"
+    const val ENDPOINT_FAVORITES_REMOVE = "videos/favorites-removed/{videoId}"
+    const val ENDPOINT_FAVORITES_UPDATE = "videos/favorites-videos/{username}"
+
 }
