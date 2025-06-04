@@ -402,9 +402,7 @@ fun VideoItem(
     val favoriteUiState by favoriteViewModel.uiState.collectAsState()
     val favorites by favoriteViewModel.favorites.collectAsState()
     // 实时检查订阅状态，基于最新的订阅列表数据
-    val isFavorited = remember(favorites, video.id) {
-        favoriteViewModel.isVideoFavorited(video.id ?: "")
-    }
+    val isFavorite by favoriteViewModel.isVideoFavoriteFlow(video.id ?: "").collectAsState(initial = false)
     
     var showMessage by remember { mutableStateOf<String?>(null) }
     
@@ -492,7 +490,7 @@ fun VideoItem(
             IconButton(
                 onClick = {
                     video.id?.let { videoId ->
-                        if (isFavorited) {
+                        if (isFavorite) {
                             favoriteViewModel.removeFromFavorites(videoId) { success, message ->
                                 showMessage = message ?: if (success) "取消订阅成功" else "取消订阅失败"
                             }
@@ -513,9 +511,9 @@ fun VideoItem(
                     )
             ) {
                 Icon(
-                    imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = if (isFavorited) "取消订阅" else "订阅",
-                    tint = if (isFavorited) Color.Red else Color.White,
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorite) "取消订阅" else "订阅",
+                    tint = if (isFavorite) Color.Red else Color.White,
                     modifier = Modifier.size(16.dp)
                 )
             }

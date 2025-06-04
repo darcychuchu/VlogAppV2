@@ -37,6 +37,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.vlog.app.navigation.Screen
+import com.vlog.app.data.histories.watch.WatchHistoryEntity
 
 /**
  * 观看历史页面
@@ -61,7 +63,7 @@ fun WatchHistoryScreen(
                 },
                 actions = {
                     // 清空历史按钮
-                    if (uiState.watchHistory.isNotEmpty()) {
+                    if (uiState.watchHistoryWithVideo.isNotEmpty()) {
                         IconButton(onClick = { showClearConfirmDialog = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "清空历史")
                         }
@@ -76,8 +78,17 @@ fun WatchHistoryScreen(
     ) { paddingValues ->
         WatchHistoryContent(
             uiState = uiState,
-            onItemClick = { videoId ->
-                navController.navigate("video_detail/$videoId")
+            onItemClick = { watchHistory ->
+                // 从观看历史继续观看，传递播放参数
+                val route = Screen.VideoDetail.createRoute(
+                    videoId = watchHistory.videoId,
+                    gatherId = watchHistory.gatherId,
+                    playerUrl = watchHistory.playerUrl,
+                    episodeTitle = watchHistory.episodeTitle,
+                    lastPlayedPosition = watchHistory.lastPlayedPosition,
+                    episodeIndex = watchHistory.episodeIndex
+                )
+                navController.navigate(route)
             },
             onDeleteItem = { videoId ->
                 watchHistoryViewModel.deleteWatchHistory(videoId)
@@ -117,7 +128,7 @@ fun WatchHistoryScreen(
 @Composable
 fun WatchHistoryContent(
     uiState: WatchHistoryUiState,
-    onItemClick: (String) -> Unit,
+    onItemClick: (WatchHistoryEntity) -> Unit,
     onDeleteItem: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -149,7 +160,7 @@ fun WatchHistoryContent(
                     )
                 }
             }
-            uiState.watchHistory.isEmpty() -> {
+            uiState.watchHistoryWithVideo.isEmpty() -> {
                 Text(
                     text = "暂无观看历史记录",
                     style = MaterialTheme.typography.titleMedium,
@@ -161,11 +172,11 @@ fun WatchHistoryContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    items(uiState.watchHistory) { history ->
+                    items(uiState.watchHistoryWithVideo) { history ->
                         WatchHistoryItem(
-                            watchHistory = history,
-                            onClick = { onItemClick(history.videoId) },
-                            onDelete = { onDeleteItem(history.videoId) }
+                            watchHistoryWithVideo = history,
+                            onClick = { onItemClick(history.watchHistory) },
+                            onDelete = { onDeleteItem(history.watchHistory.videoId) }
                         )
                     }
                 }

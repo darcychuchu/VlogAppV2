@@ -26,8 +26,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.vlog.app.data.favorites.FavoritesWithVideo
+import com.vlog.app.data.favorites.toVideoDetail
 import com.vlog.app.data.videos.VideoDetail
-import com.vlog.app.data.videos.VideoList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,11 +38,12 @@ fun FavoritesScreen(
     viewModel: FavoriteViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val favoriteVideos by viewModel.favoriteVideos.collectAsState()
+    val favoriteVideosWithVideo by viewModel.favoriteVideosWithVideo.collectAsState()
+    val favoriteCount by viewModel.favoriteCount.collectAsState()
     
-    // 初始加载
+    // 初始同步数据
     LaunchedEffect(Unit) {
-        viewModel.loadFavorites()
+        viewModel.syncFavoritesFromServer()
     }
     
 
@@ -74,29 +76,21 @@ fun FavoritesScreen(
                     }
                 },
                 actions = {
-                    // 刷新按钮
+                    // 同步按钮
                     IconButton(
-                        onClick = { viewModel.loadFavorites() },
+                        onClick = { viewModel.syncFavoritesFromServer() },
                         enabled = !uiState.isLoading
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "刷新"
-                        )
-                    }
-                    
-                    // 更新视频数据按钮
-                    TextButton(
-                        onClick = { viewModel.updateFavoriteVideos(forceUpdate = true) },
-                        enabled = !uiState.isUpdating
-                    ) {
-                        if (uiState.isUpdating) {
+                        if (uiState.isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("更新数据")
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "同步"
+                            )
                         }
                     }
                 }
@@ -158,7 +152,7 @@ fun FavoritesScreen(
             
             // 订阅视频列表
             when {
-                favoriteVideos.isEmpty() && !uiState.isLoading -> {
+                favoriteVideosWithVideo.isEmpty() && !uiState.isLoading -> {
                     // 空状态
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -212,43 +206,27 @@ fun FavoritesScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "共订阅 ${favoriteVideos.size} 个视频",
+                                        text = "共订阅 ${favoriteCount} 个视频",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Medium
                                     )
-                                    
-                                    if (uiState.isUpdating) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "更新中...",
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    }
                                 }
                             }
                         }
                         
                         // 视频卡片列表
-                        items(favoriteVideos) { video ->
-                            FavoriteVideoCard(
-                                video = video,
-                                onClick = { onVideoClick(video.id!!) },
-                                onRemoveFavorite = {
-                                    viewModel.removeFromFavorites(video.id!!) { success, message ->
-                                        if (success) {
-                                            viewModel.loadFavorites() // 重新加载列表
+                        items(favoriteVideosWithVideo) { favoriteWithVideo ->
+                            favoriteWithVideo.video?.let { video ->
+                                FavoriteVideoCard(
+                                    video = video.toVideoDetail(),
+                                    onClick = { onVideoClick(video.id) },
+                                    onRemoveFavorite = {
+                                        viewModel.removeFromFavorites(video.id!!) { success, message ->
+                                            // 不需要手动重新加载，Room会自动更新Flow
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }

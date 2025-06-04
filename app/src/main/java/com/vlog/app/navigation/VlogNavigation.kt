@@ -20,13 +20,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.vlog.app.screens.favorites.FavoritesScreen
 import com.vlog.app.screens.home.HomeScreen
-import com.vlog.app.screens.profile.ProfileScreen
 import com.vlog.app.screens.profile.WatchHistoryScreen
 import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserViewModel
 import com.vlog.app.screens.videos.VideoDetailScreen
 import com.vlog.app.screens.videos.VideosScreen
+import androidx.core.net.toUri
 
 sealed class Screen(val route: String) {
     // 认证相关页面
@@ -35,7 +35,29 @@ sealed class Screen(val route: String) {
 
     // 视频相关页面
     object VideoDetail : Screen("video_detail/{videoId}") {
-        fun createRoute(videoId: String) = "video_detail/$videoId"
+        fun createRoute(
+            videoId: String,
+            gatherId: String? = null,
+            playerUrl: String? = null,
+            episodeTitle: String? = null,
+            lastPlayedPosition: Long? = null,
+            episodeIndex: Int? = null
+        ): String {
+            var route = "video_detail/$videoId"
+            val params = mutableListOf<String>()
+            
+            gatherId?.let { params.add("gatherId=$it") }
+            playerUrl?.let { params.add("playerUrl=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+            episodeTitle?.let { params.add("episodeTitle=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+            lastPlayedPosition?.let { params.add("lastPlayedPosition=$it") }
+            episodeIndex?.let { params.add("episodeIndex=$it") }
+            
+            if (params.isNotEmpty()) {
+                route += "?" + params.joinToString("&")
+            }
+            
+            return route
+        }
     }
 
     // 视频相关页面
@@ -136,14 +158,32 @@ fun VlogNavigation() {
 
             // 视频详情页面
             composable(
-                route = Screen.VideoDetail.route,
-                arguments = listOf(
-                    navArgument("videoId") { type = NavType.StringType }
-                )
+            route = Screen.VideoDetail.route,
+            arguments = listOf(
+                navArgument("videoId") { type = NavType.StringType }
+            )
             ) { backStackEntry ->
                 val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+                
+                // 从查询参数中获取可选参数
+                val uri = (backStackEntry.destination.route ?: "").toUri()
+                val gatherId = uri.getQueryParameter("gatherId")
+                val playerUrl = uri.getQueryParameter("playerUrl")?.let { 
+                    java.net.URLDecoder.decode(it, "UTF-8")
+                }
+                val episodeTitle = uri.getQueryParameter("episodeTitle")?.let { 
+                    java.net.URLDecoder.decode(it, "UTF-8")
+                }
+                val lastPlayedPosition = uri.getQueryParameter("lastPlayedPosition")?.toLongOrNull()
+                val episodeIndex = uri.getQueryParameter("episodeIndex")?.toIntOrNull()
+                
                 VideoDetailScreen(
                     videoId = videoId,
+                    gatherId = gatherId,
+                    playerUrl = playerUrl,
+                    episodeTitle = episodeTitle,
+                    lastPlayedPosition = lastPlayedPosition,
+                    episodeIndex = episodeIndex,
                     onNavigateBack = {
                         navController.popBackStack()
                     }

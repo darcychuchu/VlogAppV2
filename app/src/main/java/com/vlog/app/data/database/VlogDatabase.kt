@@ -4,8 +4,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
-import com.vlog.app.data.favorites.FavoriteVideoDao
-import com.vlog.app.data.favorites.FavoriteVideoEntity
+import com.vlog.app.data.favorites.FavoritesDao
+import com.vlog.app.data.favorites.FavoritesEntity
 import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.histories.watch.WatchHistoryEntity
 import com.vlog.app.data.videos.*
@@ -14,7 +14,7 @@ import com.vlog.app.data.videos.*
     entities = [
         VideoEntity::class,
         CategoryEntity::class,
-        FavoriteVideoEntity::class,
+        FavoritesEntity::class,
         WatchHistoryEntity::class
     ],
     version = 1,
@@ -24,7 +24,7 @@ abstract class VlogDatabase : RoomDatabase() {
     
     abstract fun videoDao(): VideoDao
     abstract fun categoryDao(): CategoryDao
-    abstract fun favoriteVideoDao(): FavoriteVideoDao
+    abstract fun favoritesDao(): FavoritesDao
     abstract fun watchHistoryDao(): WatchHistoryDao
 
     companion object {

@@ -1,39 +1,79 @@
 package com.vlog.app.data.favorites
 
-
+import com.vlog.app.data.favorites.FavoritesDao
+import com.vlog.app.data.favorites.FavoritesEntity
+import com.vlog.app.data.favorites.FavoritesWithVideo
+import com.vlog.app.data.users.UserSessionManager
+import com.vlog.app.data.videos.VideoDao
+import com.vlog.app.data.videos.VideoEntity
+import com.vlog.app.data.videos.toEntity
 import com.vlog.app.data.videos.VideoDetail
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * 订阅仓库
+ * 基于 Room 数据库作为单一数据源，参考观看历史的实现模式
+ */
 @Singleton
 class FavoriteRepository @Inject constructor(
-    private val favoriteService: FavoriteService
+    private val favoriteService: FavoriteService,
+    private val favoritesDao: FavoritesDao,
+    private val userSessionManager: UserSessionManager,
+    private val videoDao: VideoDao
 ) {
-    
-    // 订阅列表缓存
-    private val _favorites = MutableStateFlow<List<Favorites>>(emptyList())
-    val favorites: Flow<List<Favorites>> = _favorites.asStateFlow()
-    
-    // 订阅视频详细数据缓存
-    private val _favoriteVideos = MutableStateFlow<List<VideoDetail>>(emptyList())
-    val favoriteVideos: Flow<List<VideoDetail>> = _favoriteVideos.asStateFlow()
     
     // 最后更新时间（用于5分钟限制）
     private var lastUpdateTime = 0L
     private val UPDATE_INTERVAL_MS = 5 * 60 * 1000L // 5分钟
     
     /**
-     * 获取用户订阅列表
+     * 获取所有视频订阅记录（包含关联视频信息）
      */
-    suspend fun getFavorites(username: String, token: String): Result<List<Favorites>> {
+    fun getAllFavoriteVideosWithVideo(): Flow<List<FavoritesWithVideo>> {
+        return favoritesDao.getAllFavoriteVideosWithVideo()
+    }
+    
+    /**
+     * 获取所有订阅记录（不包含关联视频信息）
+     */
+    fun getAllFavoriteVideos(): Flow<List<FavoritesEntity>> {
+        return favoritesDao.getAllFavoriteVideos()
+    }
+    
+    /**
+     * 检查视频是否已订阅
+     */
+    suspend fun isVideoFavorite(videoId: String): Boolean {
+        return favoritesDao.isVideoFavorite(videoId)
+    }
+    
+    /**
+     * 检查视频是否已订阅（Flow版本）
+     */
+    fun isVideoFavoriteFlow(videoId: String): Flow<Boolean> {
+        return favoritesDao.isVideoFavoriteFlow(videoId)
+    }
+    
+    /**
+     * 获取订阅数量
+     */
+    fun getFavoriteVideoCountFlow(): Flow<Int> {
+        return favoritesDao.getFavoriteVideoCountFlow()
+    }
+    
+    /**
+     * 从服务器获取用户订阅列表并同步到本地数据库
+     */
+    suspend fun syncFavoritesFromServer(username: String, token: String): Result<List<Favorites>> {
         return try {
             val response = favoriteService.getFavorites(username, token)
             if (response.code == 200) {
                 val favoritesList = response.data ?: emptyList()
-                _favorites.value = favoritesList
+                // 将服务器数据转换为本地实体并保存
+                val entities = favoritesList.map { it.toEntity() }
+                favoritesDao.insertFavoriteVideos(entities)
                 Result.success(favoritesList)
             } else {
                 Result.failure(Exception(response.message ?: "获取订阅列表失败"))
@@ -50,14 +90,11 @@ class FavoriteRepository @Inject constructor(
         return try {
             val response = favoriteService.createFavorite(videoId, name, token)
             if (response.code == 200) {
-                // 更新本地缓存
-                val currentFavorites = _favorites.value.toMutableList()
-                // 检查是否已存在，避免重复添加
-                if (!currentFavorites.any { it.quoteId == videoId }) {
-                    currentFavorites.add(Favorites(quoteId = videoId, createdBy = name))
-                    _favorites.value = currentFavorites
+                // 将服务器返回的数据保存到本地数据库
+                response.data?.let { favorite ->
+                    val entity = favorite.toEntity()
+                    favoritesDao.insertFavoriteVideo(entity)
                 }
-                
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(response.message ?: "订阅失败"))
@@ -74,16 +111,8 @@ class FavoriteRepository @Inject constructor(
         return try {
             val response = favoriteService.removeFavorite(videoId, name, token)
             if (response.code == 200) {
-                // 更新本地缓存
-                val currentFavorites = _favorites.value.toMutableList()
-                currentFavorites.removeAll { it.quoteId == videoId }
-                _favorites.value = currentFavorites
-                
-                // 同时移除对应的视频详细数据
-                val currentVideos = _favoriteVideos.value.toMutableList()
-                currentVideos.removeAll { it.id == videoId }
-                _favoriteVideos.value = currentVideos
-                
+                // 从本地数据库删除
+                favoritesDao.deleteFavoriteVideoById(videoId)
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(response.message ?: "移除订阅失败"))
@@ -94,7 +123,9 @@ class FavoriteRepository @Inject constructor(
     }
     
     /**
-     * 更新订阅视频数据
+     * 同步订阅视频数据
+     * 适合老用户，用原账户登录，同步功能
+     * 返回的List<VideoDetail> --> 比对videolist的本地表数据，写入没有的video Id数据
      * 限制5分钟才能执行一次
      */
     suspend fun updateFavoriteVideos(username: String, token: String, forceUpdate: Boolean = false): Result<List<VideoDetail>> {
@@ -107,12 +138,52 @@ class FavoriteRepository @Inject constructor(
         return try {
             val response = favoriteService.updateFavoriteVideos(username, token)
             if (response.code == 200) {
-                val videosList = response.data ?: emptyList()
-                _favoriteVideos.value = videosList
+                val videoDetailsList = response.data ?: emptyList()
+                
+                // 比对本地videolist表数据，写入缺失的视频数据
+                val newVideoEntities = mutableListOf<VideoEntity>()
+                val newFavoriteEntities = mutableListOf<FavoritesEntity>()
+                
+                videoDetailsList.forEach { videoDetail ->
+                    // 检查本地是否已存在该视频
+                    val videoId = videoDetail.id ?: ""
+                    if (videoId.isNotEmpty()) {
+                        val existingVideo = videoDao.getVideoById(videoId)
+                        if (existingVideo == null) {
+                            // 如果本地不存在，添加到待插入列表
+                            newVideoEntities.add(videoDetail.toEntity())
+                        }
+                        
+                        // 检查是否已订阅该视频
+                        val existingFavorite = favoritesDao.getFavoriteVideoById(videoId)
+                        if (existingFavorite == null) {
+                            // 如果未订阅，创建订阅记录
+                            val favoriteEntity = FavoritesEntity(
+                                id = "", // Room会自动生成ID
+                                quoteId = videoId,
+                                quoteType = 11, // 视频类型
+                                createdBy = username,
+                                createdAt = System.currentTimeMillis()
+                            )
+                            newFavoriteEntities.add(favoriteEntity)
+                        }
+                    }
+                }
+                
+                // 批量插入新视频数据
+                if (newVideoEntities.isNotEmpty()) {
+                    videoDao.insertVideos(newVideoEntities)
+                }
+                
+                // 批量插入新订阅记录
+                if (newFavoriteEntities.isNotEmpty()) {
+                    favoritesDao.insertFavoriteVideos(newFavoriteEntities)
+                }
+                
                 lastUpdateTime = currentTime
-                Result.success(videosList)
+                Result.success(videoDetailsList)
             } else {
-                Result.failure(Exception(response.message ?: "更新订阅视频数据失败"))
+                Result.failure(Exception(response.message ?: "同步订阅视频数据失败"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -120,21 +191,71 @@ class FavoriteRepository @Inject constructor(
     }
     
     /**
-     * 检查视频是否已订阅
-     */
-    fun isVideoFavorited(videoId: String): Boolean {
-        // 同时检查订阅列表和视频详情列表，确保状态准确
-        val inFavorites = _favorites.value.any { it.quoteId == videoId }
-        val inVideos = _favoriteVideos.value.any { it.id == videoId }
-        return inFavorites || inVideos
-    }
-    
-    /**
      * 清除缓存
      */
     fun clearCache() {
-        _favorites.value = emptyList()
-        _favoriteVideos.value = emptyList()
         lastUpdateTime = 0L
     }
+}
+
+/**
+ * 数据转换扩展函数
+ */
+fun VideoDetail.toEntity(): VideoEntity {
+    return VideoEntity(
+        id = this.id ?: "",
+        version = this.version ?: 0,
+        isTyped = this.isTyped,
+        publishedAt = this.publishedAt,
+        categoryId = this.categoryId,
+        title = this.title,
+        score = this.score,
+        tags = this.tags,
+        remarks = this.remarks,
+        coverUrl = this.coverUrl
+    )
+}
+
+fun VideoEntity.toVideoDetail(): VideoDetail {
+    return VideoDetail(
+        id = this.id,
+        version = this.version,
+        isTyped = this.isTyped,
+        publishedAt = this.publishedAt,
+        categoryId = this.categoryId,
+        title = this.title,
+        score = this.score,
+        alias = null,
+        director = null,
+        actors = null,
+        region = null,
+        language = null,
+        description = null,
+        tags = this.tags,
+        author = null,
+        remarks = this.remarks,
+        coverUrl = this.coverUrl,
+        gatherList = mutableListOf(),
+        duration = null,
+        episodeCount = null
+    )
+}
+
+fun Favorites.toEntity(): FavoritesEntity {
+    return FavoritesEntity(
+        id = this.id ?: "",
+        quoteId = this.quoteId,
+        quoteType = 11, // 视频类型
+        createdBy = this.createdBy,
+        createdAt = this.createdAt
+    )
+}
+
+fun FavoritesEntity.toFavorites(): Favorites {
+    return Favorites(
+        id = this.id,
+        quoteId = this.quoteId,
+        createdBy = this.createdBy,
+        createdAt = this.createdAt
+    )
 }

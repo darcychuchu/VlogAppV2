@@ -32,6 +32,11 @@ import com.vlog.app.screens.favorites.FavoriteViewModel
 @Composable
 fun VideoDetailScreen(
     videoId: String,
+    gatherId: String? = null,
+    playerUrl: String? = null,
+    episodeTitle: String? = null,
+    lastPlayedPosition: Long? = null,
+    episodeIndex: Int? = null,
     onNavigateBack: () -> Unit,
     viewModel: VideoDetailViewModel = hiltViewModel(),
     playerViewModel: VideoPlayerViewModel = hiltViewModel(),
@@ -48,6 +53,16 @@ fun VideoDetailScreen(
     // 加载视频详情
     LaunchedEffect(videoId) {
         viewModel.loadVideoDetail(videoId)
+    }
+    
+    // 处理观看历史参数
+    LaunchedEffect(gatherId, playerUrl, episodeTitle, lastPlayedPosition, episodeIndex, videoDetail) {
+        if (gatherId != null && playerUrl != null && episodeTitle != null && lastPlayedPosition != null && episodeIndex != null && videoDetail != null) {
+            // 等待视频详情加载完成后再设置播放参数
+            playerViewModel.setCurrentGather(gatherId)
+            playerViewModel.setCurrentEpisode(episodeIndex)
+            playerViewModel.setPlayPosition(lastPlayedPosition)
+        }
     }
     
     // 初始化播放列表
@@ -238,7 +253,7 @@ fun VideoInfoSection(
     favoriteViewModel: FavoriteViewModel
 ) {
     val favoriteUiState by favoriteViewModel.uiState.collectAsState()
-    val isFavorited = favoriteViewModel.isVideoFavorited(detail.id!!)
+    val isFavorited by favoriteViewModel.isVideoFavoriteFlow(detail.id!!).collectAsState(initial = false)
     var showMessage by remember { mutableStateOf<String?>(null) }
     
     // 显示操作结果消息

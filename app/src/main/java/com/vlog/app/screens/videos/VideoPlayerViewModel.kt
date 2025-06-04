@@ -159,7 +159,6 @@ class VideoPlayerViewModel @Inject constructor(
                     videoId = uiState.value.videoId!!,
                     gatherId = selectedGather?.gatherId,
                     gatherName = selectedGather?.gatherTitle,
-                    remarks = selectedGather?.remarks,
                     playerTitle = selectedPlayList[validPlayIndex].title,
                     playerUrl = selectedPlayList[validPlayIndex].playUrl)
             }
@@ -276,6 +275,42 @@ class VideoPlayerViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("VideoDetailViewModel", "Error loading watch history", e)
             }
+        }
+    }
+    
+    /**
+     * 设置当前服务商
+     */
+    fun setCurrentGather(gatherId: String) {
+        viewModelScope.launch {
+            val currentState = _playlistState.value
+            val gatherIndex = currentState.gatherList.indexOfFirst { it.gatherId == gatherId }
+            if (gatherIndex >= 0) {
+                selectGather(gatherIndex, 0)
+            }
+        }
+    }
+    
+    /**
+     * 设置当前剧集
+     */
+    fun setCurrentEpisode(episodeIndex: Int) {
+        viewModelScope.launch {
+            val currentState = _playlistState.value
+            if (episodeIndex in 0 until currentState.currentPlayList.size) {
+                selectPlaySource(episodeIndex)
+            }
+        }
+    }
+    
+    /**
+     * 设置播放位置
+     */
+    fun setPlayPosition(position: Long) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                currentPosition = position
+            )
         }
     }
 

@@ -3,13 +3,15 @@ package com.vlog.app.screens.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.favorites.FavoriteRepository
-import com.vlog.app.data.favorites.Favorites
+import com.vlog.app.data.favorites.FavoritesEntity
+import com.vlog.app.data.favorites.FavoritesWithVideo
 import com.vlog.app.data.users.UserSessionManager
-import com.vlog.app.data.videos.VideoDetail
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,33 +25,34 @@ class FavoriteViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FavoriteUiState())
     val uiState: StateFlow<FavoriteUiState> = _uiState.asStateFlow()
     
-    // 订阅列表
-    private val _favorites = MutableStateFlow<List<Favorites>>(emptyList())
-    val favorites: StateFlow<List<Favorites>> = _favorites.asStateFlow()
+    // 订阅列表（不包含关联视频信息）
+    val favorites: StateFlow<List<FavoritesEntity>> = favoriteRepository.getAllFavoriteVideos()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
     
-    // 订阅视频详细数据
-    private val _favoriteVideos = MutableStateFlow<List<VideoDetail>>(emptyList())
-    val favoriteVideos: StateFlow<List<VideoDetail>> = _favoriteVideos.asStateFlow()
+    // 订阅视频详细数据（包含关联视频信息）
+    val favoriteVideosWithVideo: StateFlow<List<FavoritesWithVideo>> = favoriteRepository.getAllFavoriteVideosWithVideo()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
     
-    init {
-        // 监听订阅数据变化
-        viewModelScope.launch {
-            favoriteRepository.favorites.collect {
-                _favorites.value = it
-            }
-        }
-        
-        viewModelScope.launch {
-            favoriteRepository.favoriteVideos.collect {
-                _favoriteVideos.value = it
-            }
-        }
-    }
+    // 订阅数量
+    val favoriteCount: StateFlow<Int> = favoriteRepository.getFavoriteVideoCountFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
+        )
     
     /**
-     * 加载订阅列表
+     * 从服务器同步订阅列表到本地数据库
      */
-    fun loadFavorites() {
+    fun syncFavoritesFromServer() {
         val currentUser = userSessionManager.getUser()
         if (currentUser?.name == null || currentUser.accessToken == null) {
             _uiState.value = _uiState.value.copy(
@@ -62,14 +65,13 @@ class FavoriteViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
-            favoriteRepository.getFavorites(currentUser.name!!, currentUser.accessToken!!)
+            favoriteRepository.syncFavoritesFromServer(currentUser.name!!, currentUser.accessToken!!)
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = null
+                        error = null,
+                        lastUpdateMessage = "同步成功"
                     )
-                    // 获取订阅列表成功后，立即获取视频详情
-                    updateFavoriteVideos(forceUpdate = true)
                 }
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
@@ -93,12 +95,9 @@ class FavoriteViewModel @Inject constructor(
         viewModelScope.launch {
             favoriteRepository.createFavorite(videoId, currentUser.name!!, currentUser.accessToken!!)
                 .onSuccess {
-                    // 订阅成功后立即更新本地数据
                     _uiState.value = _uiState.value.copy(
                         lastUpdateMessage = "订阅成功"
                     )
-                    // 重新加载订阅列表
-                    loadFavorites()
                     onResult(true, "订阅成功")
                 }
                 .onFailure { error ->
@@ -120,12 +119,9 @@ class FavoriteViewModel @Inject constructor(
         viewModelScope.launch {
             favoriteRepository.removeFavorite(videoId, currentUser.name!!, currentUser.accessToken!!)
                 .onSuccess {
-                    // 取消订阅成功后立即更新本地数据
                     _uiState.value = _uiState.value.copy(
                         lastUpdateMessage = "取消订阅成功"
                     )
-                    // 重新加载订阅列表
-                    loadFavorites()
                     onResult(true, "取消订阅成功")
                 }
                 .onFailure { error ->
@@ -135,45 +131,16 @@ class FavoriteViewModel @Inject constructor(
     }
     
     /**
-     * 更新订阅视频数据
+     * 检查视频是否已订阅
      */
-    fun updateFavoriteVideos(forceUpdate: Boolean = false) {
-        val currentUser = userSessionManager.getUser()
-        if (currentUser?.name == null || currentUser.accessToken == null) {
-            _uiState.value = _uiState.value.copy(
-                error = "请先登录",
-                isUpdating = false
-            )
-            return
-        }
-        
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isUpdating = true, error = null)
-            
-            favoriteRepository.updateFavoriteVideos(currentUser.name!!, currentUser.accessToken!!, forceUpdate)
-                .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        isUpdating = false,
-                        error = null,
-                        lastUpdateMessage = "更新成功"
-                    )
-                }
-                .onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isUpdating = false,
-                        error = error.message,
-                        lastUpdateMessage = null
-                    )
-                }
-        }
+    suspend fun isVideoFavorite(videoId: String): Boolean {
+        return favoriteRepository.isVideoFavorite(videoId)
     }
     
     /**
-     * 检查视频是否已订阅
+     * 检查视频是否已订阅（Flow版本）
      */
-    fun isVideoFavorited(videoId: String): Boolean {
-        return favoriteRepository.isVideoFavorited(videoId)
-    }
+    fun isVideoFavoriteFlow(videoId: String) = favoriteRepository.isVideoFavoriteFlow(videoId)
     
     /**
      * 清除错误信息

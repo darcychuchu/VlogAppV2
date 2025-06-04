@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -28,8 +29,9 @@ interface WatchHistoryDao {
     /**
      * 获取所有观看历史记录，按最后观看时间降序排列
      */
+    @Transaction
     @Query("SELECT * FROM watch_history ORDER BY lastWatchTime DESC")
-    fun getAllWatchHistory(): Flow<List<WatchHistoryEntity>>
+    fun getAllWatchHistory(): Flow<List<WatchHistoryWithVideo>>
 
     /**
      * 获取指定视频的观看历史记录

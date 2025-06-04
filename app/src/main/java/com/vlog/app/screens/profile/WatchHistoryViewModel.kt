@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.histories.watch.WatchHistoryEntity
 import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.histories.watch.WatchHistoryWithVideo
+import com.vlog.app.data.videos.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +44,7 @@ class WatchHistoryViewModel @Inject constructor(
                 watchHistoryRepository.getAllWatchHistory().collect { historyList ->
                     _uiState.update {
                         it.copy(
-                            watchHistory = historyList,
+                            watchHistoryWithVideo = historyList,
                             isLoading = false,
                             error = null
                         )
@@ -96,7 +98,7 @@ class WatchHistoryViewModel @Inject constructor(
  * 观看历史 UI 状态
  */
 data class WatchHistoryUiState(
-    val watchHistory: List<WatchHistoryEntity> = emptyList(),
+    val watchHistoryWithVideo: List<WatchHistoryWithVideo> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )

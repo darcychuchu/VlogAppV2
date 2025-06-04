@@ -16,7 +16,7 @@ class WatchHistoryRepository @Inject constructor(
     /**
      * 获取所有观看历史
      */
-    fun getAllWatchHistory(): Flow<List<WatchHistoryEntity>> {
+    fun getAllWatchHistory(): Flow<List<WatchHistoryWithVideo>> {
         return watchHistoryDao.getAllWatchHistory()
     }
 
@@ -46,9 +46,6 @@ class WatchHistoryRepository @Inject constructor(
      */
     suspend fun addOrUpdateWatchHistory(
         videoId: String,
-        title: String,
-        coverUrl: String?,
-        remarks: String?,
         playPosition: Long = 0,
         duration: Long = 0,
         videoType: Int = 0,
@@ -61,12 +58,9 @@ class WatchHistoryRepository @Inject constructor(
     ) {
         val watchHistory = WatchHistoryEntity(
             videoId = videoId,
-            title = title,
-            coverUrl = coverUrl,
-            remarks = remarks,
             lastPlayedPosition = playPosition,
             duration = duration,
-            lastWatchTime = 0,
+            lastWatchTime = System.currentTimeMillis(),
             videoType = videoType,
             episodeTitle = episodeTitle,
             episodeIndex = episodeIndex,
@@ -92,13 +86,8 @@ class WatchHistoryRepository @Inject constructor(
         gatherName: String? = null,
         playerUrl: String? = null
     ) {
-
-
         addOrUpdateWatchHistory(
             videoId = video.id!!,
-            title = video.title!!,
-            coverUrl = video.coverUrl,
-            remarks = video.remarks,
             playPosition = playPosition,
             duration = duration,
             videoType = video.isTyped!!,
@@ -147,8 +136,7 @@ class WatchHistoryRepository @Inject constructor(
         gatherId: String? = null,
         gatherName: String? = null,
         playerTitle: String? = null,
-        playerUrl: String? = null,
-        remarks: String? = null
+        playerUrl: String? = null
     ) {
         val watchHistory = watchHistoryDao.getWatchHistoryById(videoId)
         watchHistory?.let {
@@ -156,12 +144,11 @@ class WatchHistoryRepository @Inject constructor(
                 episodeIndex = episodeIndex ?: it.episodeIndex,
                 lastPlayedPosition = playPosition ?: it.lastPlayedPosition,
                 duration = duration ?: it.duration,
-                lastWatchTime = 0,
+                lastWatchTime = System.currentTimeMillis(),
                 gatherId = gatherId ?: it.gatherId,
                 gatherName = gatherName ?: it.gatherName,
                 episodeTitle = playerTitle ?: it.episodeTitle,
-                playerUrl = playerUrl ?: it.playerUrl,
-                remarks = remarks ?: it.remarks
+                playerUrl = playerUrl ?: it.playerUrl
             )
             watchHistoryDao.updateWatchHistory(updated)
         }

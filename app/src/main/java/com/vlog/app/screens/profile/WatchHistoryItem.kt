@@ -35,7 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.vlog.app.data.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.histories.watch.WatchHistoryWithVideo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,7 +47,7 @@ import kotlin.text.isNullOrEmpty
  */
 @Composable
 fun WatchHistoryItem(
-    watchHistory: WatchHistoryEntity,
+    watchHistoryWithVideo: WatchHistoryWithVideo,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -72,14 +72,14 @@ fun WatchHistoryItem(
                     .height(80.dp)
                     .clip(RoundedCornerShape(4.dp))
             ) {
-                if (!watchHistory.coverUrl.isNullOrEmpty()) {
+                if (!watchHistoryWithVideo.video?.coverUrl.isNullOrEmpty()) {
 
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(watchHistory.coverUrl)
+                            .data(watchHistoryWithVideo.video.coverUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = watchHistory.title,
+                        contentDescription = watchHistoryWithVideo.video.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -114,9 +114,9 @@ fun WatchHistoryItem(
                 }
 
                 // 进度条
-                if (watchHistory.duration > 0 && watchHistory.lastPlayedPosition > 0) {
+                if (watchHistoryWithVideo.watchHistory.duration > 0 && watchHistoryWithVideo.watchHistory.lastPlayedPosition > 0) {
                     LinearProgressIndicator(
-                        progress = { (watchHistory.lastPlayedPosition.toFloat() / watchHistory.duration).coerceIn(0f, 1f) },
+                        progress = { (watchHistoryWithVideo.watchHistory.lastPlayedPosition.toFloat() / watchHistoryWithVideo.watchHistory.duration).coerceIn(0f, 1f) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(4.dp)
@@ -136,7 +136,7 @@ fun WatchHistoryItem(
             ) {
                 // 标题
                 Text(
-                    text = watchHistory.title,
+                    text = watchHistoryWithVideo.video?.title ?: "title",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -146,9 +146,9 @@ fun WatchHistoryItem(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // 剧集信息
-                if (!watchHistory.episodeTitle.isNullOrEmpty()) {
+                if (!watchHistoryWithVideo.watchHistory.episodeTitle.isNullOrEmpty()) {
                     Text(
-                        text = "正在观看: ${watchHistory.episodeTitle}",
+                        text = "正在观看: ${watchHistoryWithVideo.watchHistory.episodeTitle}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         maxLines = 1,
@@ -159,9 +159,9 @@ fun WatchHistoryItem(
                 }
 
                 // 服务商信息
-                if (!watchHistory.gatherName.isNullOrEmpty()) {
+                if (!watchHistoryWithVideo.watchHistory.gatherName.isNullOrEmpty()) {
                     Text(
-                        text = "服务商: ${watchHistory.gatherName}",
+                        text = "服务商: ${watchHistoryWithVideo.watchHistory.gatherName}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         maxLines = 1,
