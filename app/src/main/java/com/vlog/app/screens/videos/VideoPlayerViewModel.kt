@@ -1,7 +1,10 @@
 package com.vlog.app.screens.videos
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vlog.app.data.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.histories.watch.WatchHistoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
+import com.vlog.app.data.videos.VideoDetail
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 data class VideoPlayerUiState(
@@ -19,36 +24,67 @@ data class VideoPlayerUiState(
     val duration: Long = 0L,
     val bufferedPosition: Long = 0L,
     val playbackSpeed: Float = 1.0f,
-    val error: String? = null
+    val error: String? = null,
+    val videoId: String? = null,
+    val title: String? = null,
+    var remarks: String? = null,
+    var coverUrl: String? = null,
+    val watchHistory: WatchHistoryEntity? = null, // 观看历史
 )
 
 data class PlaylistState(
     val currentGatherIndex: Int = 0,
     val currentPlayIndex: Int = 0,
     val gatherList: List<GatherList> = emptyList(),
-    val currentPlayList: List<PlayList> = emptyList()
+    val currentPlayList: List<PlayList> = emptyList(),
+    val gatherId: String? = null,
+    val gatherName: String? = null,
+    val playerUrl: String? = null,
+    val playerTitle: String? = null
 )
 
 @HiltViewModel
-class VideoPlayerViewModel @Inject constructor() : ViewModel() {
-    
+class VideoPlayerViewModel @Inject constructor(
+    private val watchHistoryRepository: WatchHistoryRepository
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(VideoPlayerUiState())
     val uiState: StateFlow<VideoPlayerUiState> = _uiState.asStateFlow()
     
     private val _playlistState = MutableStateFlow(PlaylistState())
     val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
     
-    fun initializePlaylist(gatherList: List<GatherList>, gatherIndex: Int = 0, playIndex: Int = 0) {
+    fun initializePlaylist(videoDetail: VideoDetail, gatherList: List<GatherList>, gatherIndex: Int = 0, playIndex: Int = 0) {
         viewModelScope.launch {
             val currentGather = gatherList.getOrNull(gatherIndex)
             val currentPlayList = currentGather?.playList ?: emptyList()
-            
+
+            _uiState.value = VideoPlayerUiState(
+                videoId = videoDetail.id,
+                title = videoDetail.title,
+                coverUrl = videoDetail.coverUrl,
+                remarks = videoDetail.remarks
+            )
+
             _playlistState.value = PlaylistState(
                 currentGatherIndex = gatherIndex,
                 currentPlayIndex = playIndex,
                 gatherList = gatherList,
-                currentPlayList = currentPlayList
+                currentPlayList = currentPlayList,
+                gatherId = gatherList[gatherIndex].gatherId,
+                gatherName = gatherList[gatherIndex].gatherTitle,
+                playerUrl = currentPlayList[playIndex].playUrl,
+                playerTitle = currentPlayList[playIndex].title,
             )
+            watchHistoryRepository.addWatchHistoryFromVideo(
+                video = videoDetail,
+                gatherId = gatherList[gatherIndex].gatherId,
+                gatherName = gatherList[gatherIndex].gatherTitle,
+                playerUrl = currentPlayList[playIndex].playUrl,
+                episodeTitle = currentPlayList[playIndex].title,
+                episodeIndex = playIndex
+            )
+
         }
     }
     
@@ -119,6 +155,13 @@ class VideoPlayerViewModel @Inject constructor() : ViewModel() {
                     currentPlayIndex = validPlayIndex,
                     currentPlayList = selectedPlayList
                 )
+                watchHistoryRepository.updatePlayProgress(
+                    videoId = uiState.value.videoId!!,
+                    gatherId = selectedGather?.gatherId,
+                    gatherName = selectedGather?.gatherTitle,
+                    remarks = selectedGather?.remarks,
+                    playerTitle = selectedPlayList[validPlayIndex].title,
+                    playerUrl = selectedPlayList[validPlayIndex].playUrl)
             }
         }
     }
@@ -130,6 +173,11 @@ class VideoPlayerViewModel @Inject constructor() : ViewModel() {
                 _playlistState.value = currentState.copy(
                     currentPlayIndex = playIndex
                 )
+                watchHistoryRepository.updatePlayProgress(
+                    videoId = uiState.value.videoId!!,
+                    episodeIndex = playIndex,
+                    playerTitle = currentState.currentPlayList[playIndex].title,
+                    playerUrl = currentState.currentPlayList[playIndex].playUrl)
             }
         }
     }
@@ -174,6 +222,10 @@ class VideoPlayerViewModel @Inject constructor() : ViewModel() {
                 duration = duration ?: _uiState.value.duration,
                 bufferedPosition = bufferedPosition ?: _uiState.value.bufferedPosition
             )
+//            watchHistoryRepository.updatePlayProgress(
+//                videoId = uiState.value.videoId!!,
+//                playPosition = currentPosition ?: _uiState.value.currentPosition,
+//                duration = duration ?: _uiState.value.duration)
         }
     }
     
@@ -204,4 +256,27 @@ class VideoPlayerViewModel @Inject constructor() : ViewModel() {
     fun clearError() {
         setError(null)
     }
+
+
+    /**
+     * 加载观看历史
+     */
+    fun loadWatchHistory(videoId: String) {
+        viewModelScope.launch {
+            try {
+                val watchHistory = watchHistoryRepository.getWatchHistoryById(videoId)
+
+                if (watchHistory != null) {
+                    _uiState.update {
+                        it.copy(
+                            watchHistory = watchHistory
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("VideoDetailViewModel", "Error loading watch history", e)
+            }
+        }
+    }
+
 }

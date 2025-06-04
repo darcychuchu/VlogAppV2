@@ -4,17 +4,18 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.vlog.app.data.favorites.FavoriteVideoDao
 import com.vlog.app.data.favorites.FavoriteVideoEntity
+import com.vlog.app.data.histories.watch.WatchHistoryDao
+import com.vlog.app.data.histories.watch.WatchHistoryEntity
 import com.vlog.app.data.videos.*
 
 @Database(
     entities = [
         VideoEntity::class,
         CategoryEntity::class,
-        FavoriteVideoEntity::class
+        FavoriteVideoEntity::class,
+        WatchHistoryEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -24,6 +25,7 @@ abstract class VlogDatabase : RoomDatabase() {
     abstract fun videoDao(): VideoDao
     abstract fun categoryDao(): CategoryDao
     abstract fun favoriteVideoDao(): FavoriteVideoDao
+    abstract fun watchHistoryDao(): WatchHistoryDao
 
     companion object {
         @Volatile

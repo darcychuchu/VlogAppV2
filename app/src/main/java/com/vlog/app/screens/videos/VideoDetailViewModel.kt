@@ -1,19 +1,27 @@
 package com.vlog.app.screens.videos
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vlog.app.data.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.videos.GatherList
+import com.vlog.app.data.videos.PlayList
 import com.vlog.app.data.videos.VideoDetail
+import com.vlog.app.data.videos.VideoList
 import com.vlog.app.data.videos.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class VideoDetailViewModel @Inject constructor(
-    private val videoRepository: VideoRepository
+    private val videoRepository: VideoRepository,
+    private val watchHistoryRepository: WatchHistoryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VideoDetailUiState())
@@ -51,6 +59,8 @@ class VideoDetailViewModel @Inject constructor(
             )
         }
     }
+
+
 
     /**
      * 刷新视频详情

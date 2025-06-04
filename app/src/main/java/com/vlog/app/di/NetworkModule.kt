@@ -7,6 +7,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.vlog.app.data.database.VlogDatabase
 import com.vlog.app.data.favorites.FavoriteService
 import com.vlog.app.data.favorites.FavoriteVideoDao
+import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.users.UserService
 import com.vlog.app.data.videos.CategoryDao
 import com.vlog.app.data.videos.VideoDao
@@ -112,5 +113,12 @@ object NetworkModule {
     fun provideFavoriteVideoDao(database: VlogDatabase): FavoriteVideoDao {
         return database.favoriteVideoDao()
     }
+
+    @Provides
+    fun provideWatchHistoryDao(database: VlogDatabase): WatchHistoryDao {
+        return database.watchHistoryDao()
+    }
+
+
 
 }

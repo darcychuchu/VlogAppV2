@@ -37,11 +37,17 @@ sealed class BottomNavItem(
         icon = Icons.Default.Add
     )
 
-    object Subscribe : BottomNavItem(
-        route = "subscribe",
+    object Favorites : BottomNavItem(
+        route = "Favorites",
         title = "订阅",
         icon = Icons.Default.Favorite
     )
+
+//    object Subscribe : BottomNavItem(
+//        route = "subscribe",
+//        title = "订阅",
+//        icon = Icons.Default.Favorite
+//    )
 
     object Profile : BottomNavItem(
         route = "profile",

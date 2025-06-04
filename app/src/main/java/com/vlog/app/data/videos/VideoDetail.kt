@@ -19,5 +19,8 @@ data class VideoDetail(
     var remarks: String? = null,
     var coverUrl: String? = null,
 
-    var gatherList: MutableList<GatherList>? = mutableListOf()
+    var gatherList: MutableList<GatherList>? = mutableListOf(),
+
+    val duration: String? = null,
+    val episodeCount: Int? = null
 )

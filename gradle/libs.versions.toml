@@ -25,7 +25,8 @@ retrofitVersion = "2.9.0"
 mediaVersion = "1.7.1"
 coil = "2.7.0"
 swiperefresh = "0.32.0"
-materialIcons = "1.6.8"
+#noinspection GradleDependency
+materialIcons = "1.7.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

@@ -54,7 +54,7 @@ fun VideoDetailScreen(
     LaunchedEffect(videoDetail) {
         videoDetail?.let { detail ->
             if (!detail.gatherList.isNullOrEmpty()) {
-                playerViewModel.initializePlaylist(detail.gatherList!!)
+                playerViewModel.initializePlaylist(detail, detail.gatherList!!)
             }
         }
     }

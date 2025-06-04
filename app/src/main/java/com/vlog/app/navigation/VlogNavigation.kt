@@ -20,6 +20,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.vlog.app.screens.favorites.FavoritesScreen
 import com.vlog.app.screens.home.HomeScreen
+import com.vlog.app.screens.profile.ProfileScreen
+import com.vlog.app.screens.profile.WatchHistoryScreen
 import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserViewModel
@@ -35,6 +37,9 @@ sealed class Screen(val route: String) {
     object VideoDetail : Screen("video_detail/{videoId}") {
         fun createRoute(videoId: String) = "video_detail/$videoId"
     }
+
+    // 视频相关页面
+    object WatchHistory : Screen("watch_history/{videoId}")
 }
 
 @Composable
@@ -58,7 +63,7 @@ fun VlogNavigation() {
                     BottomNavItem.Home.route,
                     BottomNavItem.Videos.route,
                     BottomNavItem.Publish.route,
-                    BottomNavItem.Subscribe.route,
+                    BottomNavItem.Favorites.route,
                     BottomNavItem.Profile.route
                 )
             ) {
@@ -111,7 +116,13 @@ fun VlogNavigation() {
                 )
             }
 
-            composable(BottomNavItem.Subscribe.route) {
+            composable(BottomNavItem.Profile.route) {
+                WatchHistoryScreen(
+                    navController = navController
+                )
+            }
+
+            composable(BottomNavItem.Favorites.route) {
                 FavoritesScreen(
                     onNavigateBack = {
                         navController.popBackStack()
@@ -139,6 +150,11 @@ fun VlogNavigation() {
                 )
             }
 
+            // 观看历史
+            composable(Screen.WatchHistory.route) {
+                WatchHistoryScreen(navController = navController)
+            }
+
 
 
         }
@@ -157,9 +173,8 @@ fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Videos,
-        //BottomNavItem.Subscript,
         BottomNavItem.Publish,
-        BottomNavItem.Subscribe,
+        BottomNavItem.Favorites,
         BottomNavItem.Profile
     )
 

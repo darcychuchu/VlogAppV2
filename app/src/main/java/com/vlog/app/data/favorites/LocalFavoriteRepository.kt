@@ -30,15 +30,15 @@ class LocalFavoriteRepository @Inject constructor(
     /**
      * 检查视频是否已收藏
      */
-    suspend fun isVideoFavorited(videoId: String): Boolean {
-        return favoriteVideoDao.isVideoFavorited(videoId)
+    suspend fun isVideoFavorite(videoId: String): Boolean {
+        return favoriteVideoDao.isVideoFavorite(videoId)
     }
-    
+
     /**
      * 检查视频是否已收藏（Flow）
      */
-    fun isVideoFavoritedFlow(videoId: String): Flow<Boolean> {
-        return favoriteVideoDao.isVideoFavoritedFlow(videoId)
+    fun isVideoFavoriteFlow(videoId: String): Flow<Boolean> {
+        return favoriteVideoDao.isVideoFavoriteFlow(videoId)
     }
     
     /**
@@ -72,9 +72,9 @@ class LocalFavoriteRepository @Inject constructor(
     suspend fun toggleFavorite(video: VideoList): Result<Boolean> {
         return try {
             val videoId = video.id ?: return Result.failure(IllegalArgumentException("Video ID cannot be null"))
-            val isFavorited = isVideoFavorited(videoId)
+            val isFavorite = isVideoFavorite(videoId)
             
-            if (isFavorited) {
+            if (isFavorite) {
                 removeFromFavorites(videoId)
                 Result.success(false)
             } else {
