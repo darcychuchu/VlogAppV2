@@ -27,6 +27,9 @@ import com.vlog.app.screens.users.UserViewModel
 import com.vlog.app.screens.videos.VideoDetailScreen
 import com.vlog.app.screens.videos.VideosScreen
 import androidx.core.net.toUri
+import com.vlog.app.screens.profile.AppUpdateScreen
+import com.vlog.app.screens.profile.ProfileScreen
+import com.vlog.app.screens.profile.SearchScreen
 
 sealed class Screen(val route: String) {
     // 认证相关页面
@@ -62,6 +65,10 @@ sealed class Screen(val route: String) {
 
     // 视频相关页面
     object WatchHistory : Screen("watch_history/{videoId}")
+
+    object Search : Screen("search")
+
+    object AppUpdate : Screen("app_update")
 }
 
 @Composable
@@ -138,9 +145,19 @@ fun VlogNavigation() {
                 )
             }
 
+
             composable(BottomNavItem.Profile.route) {
-                WatchHistoryScreen(
-                    navController = navController
+                ProfileScreen(
+                    navController = navController,
+                    onNavigateToWatchHistory = {
+                        navController.navigate(Screen.WatchHistory.route)
+                    },
+                    onNavigateToSearch = {
+                        navController.navigate(Screen.Search.route)
+                    },
+                    onNavigateToAppUpdate = {
+                        navController.navigate(Screen.AppUpdate.route)
+                    }
                 )
             }
 
@@ -195,7 +212,29 @@ fun VlogNavigation() {
                 WatchHistoryScreen(navController = navController)
             }
 
+            // 搜索页面
+            composable(Screen.Search.route) {
+                SearchScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onVideoClick = { videoId ->
+                        navController.navigate(Screen.VideoDetail.createRoute(videoId))
+                    }
+                )
+            }
 
+
+
+
+            // 版本更新页面
+            composable(Screen.AppUpdate.route) {
+                AppUpdateScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
 
         }
     }

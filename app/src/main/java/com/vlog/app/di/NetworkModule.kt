@@ -7,8 +7,13 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.vlog.app.data.database.VlogDatabase
 import com.vlog.app.data.favorites.FavoriteService
 import com.vlog.app.data.favorites.FavoritesDao
+import com.vlog.app.data.histories.search.SearchHistoryDao
+import com.vlog.app.data.histories.search.SearchRepository
+import com.vlog.app.data.histories.search.SearchService
 import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.users.UserService
+import com.vlog.app.data.versions.AppUpdateRepository
+import com.vlog.app.data.versions.AppUpdateService
 import com.vlog.app.data.videos.CategoryDao
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoService
@@ -119,6 +124,39 @@ object NetworkModule {
         return database.watchHistoryDao()
     }
 
+    @Provides
+    @Singleton
+    fun provideSearchService(retrofit: Retrofit): SearchService {
+        return retrofit.create(SearchService::class.java)
+    }
+
+    @Provides
+    fun provideSearchHistoryDao(database: VlogDatabase): SearchHistoryDao {
+        return database.searchHistoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSearchRepository(
+        searchService: SearchService,
+        searchHistoryDao: SearchHistoryDao
+    ): SearchRepository {
+        return SearchRepository(searchService, searchHistoryDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAppUpdateService(retrofit: Retrofit): AppUpdateService {
+        return retrofit.create(AppUpdateService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAppUpdateRepository(
+        appUpdateService: AppUpdateService
+    ): AppUpdateRepository {
+        return AppUpdateRepository(appUpdateService)
+    }
 
 
 }

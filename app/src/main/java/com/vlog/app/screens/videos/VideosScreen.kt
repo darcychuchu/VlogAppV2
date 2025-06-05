@@ -147,7 +147,6 @@ fun FilterSection(
     Column(modifier = modifier) {
         // 类型筛选
         FilterRow(
-            title = "类型",
             items = listOf(
                 FilterItem("电影", 1),
                 FilterItem("电视剧", 2),
@@ -165,9 +164,7 @@ fun FilterSection(
         
         // 分类筛选
         FilterRow<String?>(
-            title = "分类",
             items = buildList {
-                add(FilterItem("全部", null))
                 addAll(categories.map { FilterItem(it.title ?: "未知", it.id?.toString()) })
             },
             selectedValue = filterState.selectedCategoryId,
@@ -180,9 +177,8 @@ fun FilterSection(
         
         // 年份筛选
         FilterRow(
-            title = "年份",
             items = listOf(
-                FilterItem("全部", 0),
+                FilterItem("年份", 0),
                 FilterItem("2025", 2025),
                 FilterItem("2024", 2024),
                 FilterItem("2023", 2023),
@@ -199,7 +195,6 @@ fun FilterSection(
         
         // 排序筛选
         FilterRow(
-            title = "排序",
             items = listOf(
                 FilterItem("最新", 0), // 按上映时间排序
                 FilterItem("评分", 1), // 按评分排序
@@ -217,21 +212,12 @@ fun FilterSection(
 // 筛选行组件
 @Composable
 fun <T> FilterRow(
-    title: String,
     items: List<FilterItem<T>>,
     selectedValue: T?,
     onItemSelected: (T?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = "$title:",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
