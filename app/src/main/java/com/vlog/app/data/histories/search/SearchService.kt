@@ -11,7 +11,7 @@ interface SearchService {
      * @param key 搜索关键词，为空时返回热门搜索
      * @return 搜索结果列表
      */
-    @GET(Constants.ENDPOINT_SEARCH)
+    @GET(Constants.ENDPOINT_VIDEO_SEARCH)
     suspend fun searchVideos(
         @Query("key") key: String? = null
     ): ApiResponse<List<VideoList>>

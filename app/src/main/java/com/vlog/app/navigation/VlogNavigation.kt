@@ -20,16 +20,21 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.vlog.app.screens.favorites.FavoritesScreen
 import com.vlog.app.screens.home.HomeScreen
+import com.vlog.app.screens.profile.AppUpdateScreen
+import com.vlog.app.screens.profile.ProfileScreen
 import com.vlog.app.screens.profile.WatchHistoryScreen
+import com.vlog.app.screens.search.SearchScreen
 import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserViewModel
 import com.vlog.app.screens.videos.VideoDetailScreen
 import com.vlog.app.screens.videos.VideosScreen
 import androidx.core.net.toUri
-import com.vlog.app.screens.profile.AppUpdateScreen
-import com.vlog.app.screens.profile.ProfileScreen
-import com.vlog.app.screens.profile.SearchScreen
+import androidx.navigation.NavGraphBuilder
+import com.vlog.app.screens.profile.ProfileNavHost
+import com.vlog.app.screens.publish.PublishScreen
+import com.vlog.app.screens.users.UserHomeScreen
+import com.vlog.app.ui.screens.publish.PhotoPublishScreen
 
 sealed class Screen(val route: String) {
     // 认证相关页面
@@ -65,10 +70,24 @@ sealed class Screen(val route: String) {
 
     // 视频相关页面
     object WatchHistory : Screen("watch_history/{videoId}")
-
-    object Search : Screen("search")
-
+    
+    object Search : Screen("search?query={query}") {
+        fun createRoute(query: String = ""): String {
+            return if (query.isNotBlank()) {
+                "search?query=${java.net.URLEncoder.encode(query, "UTF-8")}"
+            } else {
+                "search"
+            }
+        }
+    }
+    
     object AppUpdate : Screen("app_update")
+    // 发布相关页面
+    object PhotoPublish : Screen("photo_publish")
+    // 发布相关页面
+    object UserHome : Screen("user_home/{username}") {
+        fun createRoute(username: String) = "user_home/$username"
+    }
 }
 
 @Composable
@@ -145,7 +164,6 @@ fun VlogNavigation() {
                 )
             }
 
-
             composable(BottomNavItem.Profile.route) {
                 ProfileScreen(
                     navController = navController,
@@ -211,10 +229,21 @@ fun VlogNavigation() {
             composable(Screen.WatchHistory.route) {
                 WatchHistoryScreen(navController = navController)
             }
-
+            
             // 搜索页面
-            composable(Screen.Search.route) {
+            composable(
+                route = "search?query={query}",
+                arguments = listOf(
+                    navArgument("query") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                        nullable = true
+                    }
+                )
+            ) { backStackEntry ->
+                val query = backStackEntry.arguments?.getString("query") ?: ""
                 SearchScreen(
+                    initialQuery = query,
                     onNavigateBack = {
                         navController.popBackStack()
                     },
@@ -223,10 +252,7 @@ fun VlogNavigation() {
                     }
                 )
             }
-
-
-
-
+            
             // 版本更新页面
             composable(Screen.AppUpdate.route) {
                 AppUpdateScreen(
@@ -235,6 +261,59 @@ fun VlogNavigation() {
                     }
                 )
             }
+
+
+            // 图文发布页面
+            composable(BottomNavItem.Publish.route) {
+                PublishScreen(
+                    onNavigateToPhotoPublish = {
+                        navController.navigate(Screen.PhotoPublish.route)
+                    }
+                )
+            }
+            composable(Screen.PhotoPublish.route) {
+                PhotoPublishScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+
+
+            // 用户主页
+            composable(
+                route = Screen.UserHome.route,
+                arguments = listOf(
+                    navArgument("username") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val username = backStackEntry.arguments?.getString("username") ?: ""
+                UserHomeScreen(
+                    userName = username,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    navController = navController
+                )
+            }
+
+
+
+            // profileNavigation 自定义二级导航
+            profileNavigation(
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
+                onNavigateToStoryDetail = { userName, storyId -> },
+                onNavigateToUserProfile = { username ->
+                    navController.navigate(Screen.UserHome.createRoute(username))
+                },
+                onNavigateToFollowers = {  },
+                onNavigateToFollowing = { }
+            )
 
         }
     }
@@ -277,5 +356,28 @@ fun BottomNavigationBar(navController: NavHostController) {
                 }
             )
         }
+    }
+}
+
+
+
+/**
+ * 将Profile导航添加到主导航图
+ */
+fun NavGraphBuilder.profileNavigation(
+    onNavigateToLogin: () -> Unit,
+    onNavigateToStoryDetail: (String, String) -> Unit,
+    onNavigateToUserProfile: (String) -> Unit,
+    onNavigateToFollowers: () -> Unit = {},
+    onNavigateToFollowing: () -> Unit = {}
+) {
+    composable(BottomNavItem.Profile.route) {
+        ProfileNavHost(
+            onNavigateToLogin = onNavigateToLogin,
+            onNavigateToStoryDetail = onNavigateToStoryDetail,
+            onNavigateToUserProfile = onNavigateToUserProfile,
+            onNavigateToFollowers = onNavigateToFollowers,
+            onNavigateToFollowing = onNavigateToFollowing
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.vlog.app.data.favorites
 
+import android.util.Log
 import com.vlog.app.data.favorites.FavoritesDao
 import com.vlog.app.data.favorites.FavoritesEntity
 import com.vlog.app.data.favorites.FavoritesWithVideo
@@ -64,16 +65,29 @@ class FavoriteRepository @Inject constructor(
     }
     
     /**
-     * 从服务器获取用户订阅列表并同步到本地数据库
+     * 从服务器同步订阅列表到本地数据库
      */
     suspend fun syncFavoritesFromServer(username: String, token: String): Result<List<Favorites>> {
         return try {
             val response = favoriteService.getFavorites(username, token)
+            Log.d("1---",response.toString())
             if (response.code == 200) {
                 val favoritesList = response.data ?: emptyList()
                 // 将服务器数据转换为本地实体并保存
                 val entities = favoritesList.map { it.toEntity() }
+                Log.d("2---",entities.toString())
                 favoritesDao.insertFavoriteVideos(entities)
+
+                Log.d("3---",entities.toString())
+                // 同步视频详细信息到VideoEntity表
+                val videoDetailsResponse = favoriteService.updateFavoriteVideos(username, token)
+                Log.d("4---",videoDetailsResponse.toString())
+                if (videoDetailsResponse.code == 200) {
+                    val videoDetailsList = videoDetailsResponse.data ?: emptyList()
+                    val videoEntities = videoDetailsList.map { it.toEntity() }
+                    videoDao.insertVideos(videoEntities)
+                }
+                
                 Result.success(favoritesList)
             } else {
                 Result.failure(Exception(response.message ?: "获取订阅列表失败"))
@@ -131,12 +145,13 @@ class FavoriteRepository @Inject constructor(
     suspend fun updateFavoriteVideos(username: String, token: String, forceUpdate: Boolean = false): Result<List<VideoDetail>> {
         // 检查更新间隔限制
         val currentTime = System.currentTimeMillis()
-        if (!forceUpdate && (currentTime - lastUpdateTime) < UPDATE_INTERVAL_MS) {
-            return Result.failure(Exception("请等待 ${(UPDATE_INTERVAL_MS - (currentTime - lastUpdateTime)) / 1000} 秒后再更新"))
-        }
+//        if (!forceUpdate && (currentTime - lastUpdateTime) < UPDATE_INTERVAL_MS) {
+//            return Result.failure(Exception("请等待 ${(UPDATE_INTERVAL_MS - (currentTime - lastUpdateTime)) / 1000} 秒后再更新"))
+//        }
         
         return try {
             val response = favoriteService.updateFavoriteVideos(username, token)
+            Log.d("3----",response.toString())
             if (response.code == 200) {
                 val videoDetailsList = response.data ?: emptyList()
                 

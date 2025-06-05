@@ -11,12 +11,14 @@ import com.vlog.app.data.histories.search.SearchHistoryDao
 import com.vlog.app.data.histories.search.SearchRepository
 import com.vlog.app.data.histories.search.SearchService
 import com.vlog.app.data.histories.watch.WatchHistoryDao
+import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.stories.StoriesService
 import com.vlog.app.data.users.UserService
-import com.vlog.app.data.versions.AppUpdateRepository
-import com.vlog.app.data.versions.AppUpdateService
 import com.vlog.app.data.videos.CategoryDao
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoService
+import com.vlog.app.data.versions.AppUpdateService
+import com.vlog.app.data.versions.AppUpdateRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -124,6 +126,15 @@ object NetworkModule {
         return database.watchHistoryDao()
     }
 
+//    @Provides
+//    @Singleton
+//    fun provideWatchHistoryRepository(
+//        watchHistoryDao: WatchHistoryDao
+//    ): WatchHistoryRepository {
+//        return WatchHistoryRepository(watchHistoryDao)
+//    }
+
+
     @Provides
     @Singleton
     fun provideSearchService(retrofit: Retrofit): SearchService {
@@ -156,6 +167,12 @@ object NetworkModule {
         appUpdateService: AppUpdateService
     ): AppUpdateRepository {
         return AppUpdateRepository(appUpdateService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideStoriesService(retrofit: Retrofit): StoriesService {
+        return retrofit.create(StoriesService::class.java)
     }
 
 

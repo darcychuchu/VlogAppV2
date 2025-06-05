@@ -1,5 +1,6 @@
 package com.vlog.app.data.versions
 
+import com.vlog.app.data.videos.VideoList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,20 +15,9 @@ class AppUpdateRepository(
      * 检查应用更新
      * @return 应用版本信息
      */
-    suspend fun checkUpdate(): Result<AppVersion> = withContext(Dispatchers.IO) {
-        try {
-            try {
-                // 尝试调用真实API
-                val response = appUpdateService.checkUpdate()
-                if (response.code == 200) {
-                    Result.success(response.data)
-                }
-                Result.success(AppVersion())
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    suspend fun checkUpdate(): AppVersion? {
+        return withContext(Dispatchers.IO) {
+            appUpdateService.checkUpdate().data
         }
     }
 }

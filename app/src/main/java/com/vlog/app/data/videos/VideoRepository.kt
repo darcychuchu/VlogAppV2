@@ -150,7 +150,7 @@ class VideoRepository @Inject constructor(
     ): Result<VideoDetail> {
         return try {
             val response = videoService.getVideoDetail(
-                id = id,
+                videoId = id,
                 token = token
             )
             

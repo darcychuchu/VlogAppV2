@@ -1,7 +1,7 @@
 package com.vlog.app.screens.profile
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -316,7 +315,7 @@ fun DownloadProgressSection(progress: Int) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = progress / 100f,
+                progress = { progress / 100f },
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -332,6 +331,7 @@ fun DownloadProgressSection(progress: Int) {
 /**
  * 格式化文件大小
  */
+@SuppressLint("DefaultLocale")
 fun formatFileSize(bytes: Long): String {
     val kb = bytes / 1024.0
     val mb = kb / 1024.0

@@ -1,4 +1,4 @@
-package com.vlog.app.data.model
+package com.vlog.app.data.comments
 
 data class Comments(
     var id: String? = null,

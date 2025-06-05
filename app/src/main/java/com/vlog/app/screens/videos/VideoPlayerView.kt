@@ -43,6 +43,7 @@ fun VideoPlayerView(
     hasNext: Boolean,
     currentGatherTitle: String?,
     currentPlayTitle: String?,
+    onOrientationToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -97,15 +98,8 @@ fun VideoPlayerView(
         }
     }
     
-    // 处理全屏模式
-    LaunchedEffect(isFullscreen) {
-        val activity = context as? ComponentActivity
-        activity?.requestedOrientation = if (isFullscreen) {
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
-    }
+    // 注意：移除了Activity方向设置，避免整个页面横屏
+    // 全屏模式现在只影响播放器组件本身的布局
     
     // 清理资源
     DisposableEffect(Unit) {
@@ -117,7 +111,13 @@ fun VideoPlayerView(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(if (isFullscreen) 16f / 9f else 16f / 9f)
+            .then(
+                if (isFullscreen) {
+                    Modifier.fillMaxHeight()
+                } else {
+                    Modifier.aspectRatio(16f / 9f)
+                }
+            )
             .background(Color.Black)
             .clickable {
                 showControls = !showControls
@@ -171,6 +171,7 @@ fun VideoPlayerView(
                 },
                 currentGatherTitle = currentGatherTitle,
                 currentPlayTitle = currentPlayTitle,
+                onOrientationToggle = onOrientationToggle,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -203,6 +204,7 @@ fun VideoPlayerControls(
     onFastRewind: () -> Unit,
     currentGatherTitle: String?,
     currentPlayTitle: String?,
+    onOrientationToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -373,15 +375,29 @@ fun VideoPlayerControls(
                     fontSize = 12.sp
                 )
                 
-                // 全屏按钮
-                IconButton(
-                    onClick = onFullscreenToggle
-                ) {
-                    Icon(
-                        imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                        contentDescription = if (isFullscreen) "退出全屏" else "全屏",
-                        tint = Color.White
-                    )
+                // 右侧按钮组
+                Row {
+                    // 横竖屏切换按钮
+                    IconButton(
+                        onClick = onOrientationToggle
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ScreenRotation,
+                            contentDescription = "横竖屏切换",
+                            tint = Color.White
+                        )
+                    }
+                    
+                    // 全屏按钮
+                    IconButton(
+                        onClick = onFullscreenToggle
+                    ) {
+                        Icon(
+                            imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                            contentDescription = if (isFullscreen) "退出全屏" else "全屏",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }

@@ -11,10 +11,14 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -25,6 +29,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,6 +61,11 @@ fun VideosScreen(
     val gridState = rememberLazyGridState()
     val pullToRefreshState = rememberPullToRefreshState()
     
+    // 搜索相关状态
+    var showSearchBar by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    
     // 监听滚动到底部，自动加载更多
     LaunchedEffect(gridState, videos.size) {
         snapshotFlow { 
@@ -79,16 +90,62 @@ fun VideosScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text("视频列表")
+                    if (showSearchBar) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("搜索视频...") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Search
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onSearch = {
+                                    if (searchQuery.isNotBlank()) {
+                                        keyboardController?.hide()
+                                        navController?.navigate("search?query=${java.net.URLEncoder.encode(searchQuery, "UTF-8")}")
+                                        showSearchBar = false
+                                        searchQuery = ""
+                                    }
+                                }
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text("视频列表")
+                    }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { viewModel.refresh() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "刷新"
-                        )
+                    if (showSearchBar) {
+                        IconButton(
+                            onClick = {
+                                showSearchBar = false
+                                searchQuery = ""
+                                keyboardController?.hide()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "关闭搜索"
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { showSearchBar = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "搜索"
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.refresh() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "刷新"
+                            )
+                        }
                     }
                 }
             )

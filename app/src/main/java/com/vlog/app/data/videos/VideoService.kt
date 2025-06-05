@@ -2,18 +2,20 @@ package com.vlog.app.data.videos
 
 import com.vlog.app.data.ApiResponse
 import com.vlog.app.data.PaginatedResponse
+import com.vlog.app.di.Constants
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface VideoService {
-    
-    @GET("videos/categories/{typed}")
+
+    @GET(Constants.ENDPOINT_VIDEO_CATEGORIES)
     suspend fun getCategories(
         @Path("typed") typed: Int = 0
     ): ApiResponse<List<Categories>>
-    
-    @GET("videos/list")
+
+    @GET(Constants.ENDPOINT_VIDEO_LIST)
     suspend fun getVideoList(
         @Query("typed") typed: Int = 0,
         @Query("cate") cate: String? = null,
@@ -23,18 +25,18 @@ interface VideoService {
         @Query("size") size: Int = 24,
         @Query("token") token: String? = null
     ): ApiResponse<PaginatedResponse<VideoList>>
-    
-    @GET("videos/search")
+
+    @GET(Constants.ENDPOINT_VIDEO_SEARCH)
     suspend fun searchVideos(
         @Query("key") searchKey: String,
         @Query("page") page: Int = 1,
         @Query("size") size: Int = 24,
         @Query("token") token: String? = null
     ): ApiResponse<PaginatedResponse<VideoList>>
-    
-    @GET("videos/detail/{id}")
+
+    @GET(Constants.ENDPOINT_VIDEO_DETAIL)
     suspend fun getVideoDetail(
-        @Path("id") id: String,
+        @Path("videoId") videoId: String,
         @Query("token") token: String? = null
     ): ApiResponse<VideoDetail>
 }

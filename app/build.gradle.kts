@@ -91,5 +91,4 @@ dependencies {
     // Material Icons Extended
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.swiperefresh)
-
 }
