@@ -42,6 +42,18 @@ interface VideoDao {
         categoryId: String?,
         year: Int?
     ): Int
+
+    @Query("""
+        SELECT MIN(lastRefreshed) FROM videos
+        WHERE (:type IS NULL OR isTyped = :type)
+        AND (:categoryId IS NULL OR categoryId = :categoryId)
+        AND (:year IS NULL OR releasedAt = :year)
+    """)
+    suspend fun getMinLastRefreshedTimestamp(
+        type: Int?,
+        categoryId: String?,
+        year: Int?
+    ): Long?
     
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getVideoById(id: String): VideoEntity?

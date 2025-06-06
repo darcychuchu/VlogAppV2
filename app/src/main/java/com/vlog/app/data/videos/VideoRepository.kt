@@ -11,6 +11,10 @@ class VideoRepository @Inject constructor(
     private val videoService: VideoService,
     private val videoDao: VideoDao
 ) {
+
+    companion object {
+        private const val VIDEO_UPDATE_INTERVAL = 24 * 60 * 60 * 1000L // 24 hours in milliseconds
+    }
     
     // 获取所有视频的Flow
     fun getAllVideos(): Flow<List<Videos>> {
@@ -31,7 +35,7 @@ class VideoRepository @Inject constructor(
     ): Result<PaginatedResponse<Videos>> {
         return try {
             // 如果强制刷新或本地没有数据或者是分页请求，从API获取
-            if (forceRefresh || shouldFetchFromApi(typed, categoryId, year) || page > 1) {
+            if (forceRefresh || shouldUpdateVideos(typed, categoryId, year) || page > 1) {
                 val response = videoService.getVideos(
                     typed = typed,
                     cate = categoryId,
@@ -123,15 +127,20 @@ class VideoRepository @Inject constructor(
         }
     }
     
-    // 判断是否需要从API获取数据
-    private suspend fun shouldFetchFromApi(
+    // 判断是否需要更新数据
+    private suspend fun shouldUpdateVideos(
         type: Int?,
         categoryId: String?,
         year: Int?
     ): Boolean {
-        // 检查本地是否有对应筛选条件的数据
-        val count = videoDao.getFilteredVideosCount(type, categoryId, year)
-        return count == 0
+        val minLastRefreshed = videoDao.getMinLastRefreshedTimestamp(type, categoryId, year)
+        val currentTime = System.currentTimeMillis()
+
+        return if (minLastRefreshed == null) {
+            true // No data, should update
+        } else {
+            (currentTime - minLastRefreshed) > VIDEO_UPDATE_INTERVAL
+        }
     }
 
 }

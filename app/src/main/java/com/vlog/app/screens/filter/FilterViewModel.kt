@@ -38,7 +38,7 @@ class FilterViewModel @Inject constructor(
         loadSubCategories(defaultCategoryId)
 
         // 加载筛选列表
-        loadFilteredVideos()
+        loadFilteredVideos(forceRefresh = false)
     }
 
     /**
@@ -114,7 +114,7 @@ class FilterViewModel @Inject constructor(
         }
 
         // 自动应用筛选条件
-        loadFilteredVideos()
+        loadFilteredVideos(forceRefresh = false)
     }
 
     /**
@@ -166,11 +166,11 @@ class FilterViewModel @Inject constructor(
         loadSubCategories(_uiState.value.selectedCategory.id)
 
         // 加载筛选列表
-        loadFilteredVideos()
+        loadFilteredVideos(forceRefresh = false)
     }
 
     fun applyFilters() {
-        loadFilteredVideos()
+        loadFilteredVideos(forceRefresh = false)
     }
 
     /**
@@ -189,7 +189,7 @@ class FilterViewModel @Inject constructor(
                 loadMainCategories()
 
                 // 重新加载视频列表
-                loadFilteredVideos()
+                loadFilteredVideos(forceRefresh = true)
 
                 _uiState.update { it.copy(isRefreshing = false) }
             } catch (e: Exception) {
@@ -203,113 +203,59 @@ class FilterViewModel @Inject constructor(
         }
     }
 
-    private fun loadFilteredVideos() {
+    private fun loadFilteredVideos(forceRefresh: Boolean = false) {
         _uiState.update { it.copy(
             isLoading = true,
             error = null,
             currentPage = 1, // 重置当前页码
-            canLoadMore = true // 重置加载更多状态
+            // canLoadMore = true // Reset by repository response
         ) }
 
         viewModelScope.launch {
-            try {
-                // 只从网络获取数据，不使用本地数据
-                Log.d(TAG, "Loading data from API only")
-                loadFilteredVideosFromNetwork()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error loading filtered videos: ${e.message}", e)
-                e.printStackTrace()
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "",
-                        canLoadMore = false
-                    )
-                }
-            }
-        }
-    }
-
-    /**
-     * 从网络加载筛选数据
-     */
-    private suspend fun loadFilteredVideosFromNetwork() {
-        try {
             // 获取选中分类的 ID
-            val categoryId = _uiState.value.selectedCategory.id
+            val currentUiState = _uiState.value
+            val categoryId = currentUiState.selectedCategory.id
 
             // 从数据库获取分类实体，以获取 isTyped 字段
             val categoryEntity = categoryRepository.getCategoryById(categoryId)
-
             // 使用 isTyped 字段作为 typed 参数，如果为空则使用 ID
             val typed = categoryEntity?.modelTyped ?: categoryId.toIntOrNull()
+            val year = currentUiState.selectedYear.id.toIntOrNull()
+            val orderBy = currentUiState.selectedOrderBy.id.toIntOrNull()
+            val cate = currentUiState.selectedSubCategory?.id
 
-            val year = _uiState.value.selectedYear.id.toIntOrNull()
-            val orderBy = _uiState.value.selectedOrderBy.id.toIntOrNull()
-            val cate = _uiState.value.selectedSubCategory?.id
+            val result = videoRepository.getFilteredVideos(
+                typed = typed ?: 1, // Default to 1 if typed is null
+                categoryId = cate,
+                year = year ?: 0, // Default to 0 if year is null
+                sort = orderBy ?: 0, // Default to 0 if sort is null
+                page = 1, // Always page 1 for initial load
+                forceRefresh = forceRefresh
+            )
 
-            // 直接从网络获取数据
-            val videos = withContext(Dispatchers.IO) {
-                videoRepository.getFilteredVideos(
-                    typed = typed?:1,
-                    year = year?:0,
-                    sort = orderBy?:0,
-                    page = 1,
-                    categoryId = cate
-                ).getOrNull()?.items
-            }
-
-            Log.d(TAG, "Filtered videos fetched from network, size: ${videos?.size}")
-
-            // 检查数据是否为空
-            if (videos?.isEmpty() == true) {
-                // 网络数据为空，尝试从本地加载
-                Log.d(TAG, "Network data is empty, trying to load from local")
-                loadFilteredVideosFromLocal()
-                return
-            }
-
-            // 保存到本地
-//            Log.d(TAG, "Saving filtered videos to local database")
-//            videoRepository.saveFilteredVideos(
-//                videos = videos,
-//                videoType = typed ?: 0
-//            )
-
-            // 更新 UI
-            Log.d(TAG, "Updating UI with network data")
-            _uiState.update {
-                it.copy(
-                    videos = videos?: emptyList(),
-                    isLoading = false,
-                    canLoadMore = videos?.isNotEmpty() == true
-                )
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error loading data from network: ${e.message}", e)
-            // 网络请求失败，尝试从本地加载
-            loadFilteredVideosFromLocal()
+            result.fold(
+                onSuccess = { responseData ->
+                    _uiState.update {
+                        it.copy(
+                            videos = responseData.items ?: emptyList(),
+                            isLoading = false,
+                            canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && responseData.total > (responseData.items?.size ?:0),
+                            error = null
+                        )
+                    }
+                },
+                onFailure = { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = exception.message ?: "Failed to load videos",
+                            canLoadMore = false,
+                            videos = emptyList() // Clear videos on error
+                        )
+                    }
+                }
+            )
         }
-    }
-
-    /**
-     * 从本地加载筛选数据
-     */
-    private suspend fun loadFilteredVideosFromLocal() {
-        Log.d(TAG, "Loading filtered videos from local database")
-
-        // 获取选中分类的 ID
-        val categoryId = _uiState.value.selectedCategory.id
-
-        // 从数据库获取分类实体，以获取 isTyped 字段
-        val categoryEntity = categoryRepository.getCategoryById(categoryId)
-
-        // 使用 isTyped 字段作为 typed 参数，如果为空则使用 ID
-        val typed = categoryEntity?.modelTyped ?: categoryId.toIntOrNull() ?: 0
-
-        Log.d(TAG, "Loading local filtered videos - categoryId: $categoryId, isTyped: ${categoryEntity?.modelTyped}, typed: $typed")
-
-
     }
 
     /**
@@ -334,38 +280,43 @@ class FilterViewModel @Inject constructor(
                 val categoryEntity = categoryRepository.getCategoryById(categoryId)
 
                 // 使用 isTyped 字段作为 typed 参数，如果为空则使用 ID
-                val typed = categoryEntity?.modelTyped ?: 0
+                val typed = categoryEntity?.modelTyped ?: categoryId.toIntOrNull()
 
                 val year = _uiState.value.selectedYear.id.toIntOrNull()
                 val orderBy = _uiState.value.selectedOrderBy.id.toIntOrNull()
-                val cate = _uiState.value.selectedSubCategory?.let { if (it.id == "0") null else it.id }
+                val cate = _uiState.value.selectedSubCategory?.id // Already handles "0" by being null if not selected
 
-                //Log.d(TAG, "Loading more filtered videos - categoryId: $categoryId, isTyped: ${categoryEntity?.isTyped}, typed: $typed, year: $year, orderBy: $orderBy, page: $nextPage, cate: $cate, code: $code")
-
-                val newVideos = videoRepository.getFilteredVideos(
-                    typed = typed,
-                    year = year?:0,
-                    sort = orderBy?:0,
+                val result = videoRepository.getFilteredVideos(
+                    typed = typed ?: 1, // Default to 1 if typed is null
+                    categoryId = cate,
+                    year = year ?: 0, // Default to 0 if year is null
+                    sort = orderBy ?: 0, // Default to 0 if sort is null
                     page = nextPage,
-                    categoryId = cate
-                ).getOrNull()?.items
+                    forceRefresh = false // Pagination should not force refresh
+                )
 
-                _uiState.update {
-                    it.copy(
-                        videos = it.videos + newVideos!!, // 将新视频添加到现有列表中
-                        currentPage = nextPage,
-                        isLoadingMore = false,
-                        canLoadMore = newVideos.isNotEmpty() // 如果返回的数据为空，则不能加载更多
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoadingMore = false,
-                        error = e.message ?: "Unknown error",
-                        canLoadMore = false
-                    )
-                }
+                result.fold(
+                    onSuccess = { responseData ->
+                        _uiState.update {
+                            it.copy(
+                                videos = it.videos + (responseData.items ?: emptyList()),
+                                currentPage = nextPage,
+                                isLoadingMore = false,
+                                canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && it.videos.size + (responseData.items?.size ?: 0) < responseData.total,
+                                error = null
+                            )
+                        }
+                    },
+                    onFailure = { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoadingMore = false,
+                                error = exception.message ?: "Failed to load more videos",
+                                canLoadMore = false
+                            )
+                        }
+                    }
+                )
             }
         }
     }

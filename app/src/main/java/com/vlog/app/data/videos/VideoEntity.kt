@@ -32,7 +32,8 @@ data class VideoEntity(
 
     val duration: String? = null,
     val episodeCount: Int? = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    var lastRefreshed: Long? = System.currentTimeMillis()
 )
 
 // 扩展函数：Videos -> VideoEntity
@@ -58,7 +59,8 @@ fun Videos.toEntity(): VideoEntity {
         region = this.region,
         language = this.language,
         description = this.description,
-        author = this.author
+        author = this.author,
+        lastRefreshed = System.currentTimeMillis()
     )
 }
 
