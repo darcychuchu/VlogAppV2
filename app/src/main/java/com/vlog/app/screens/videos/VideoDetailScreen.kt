@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vlog.app.data.videos.GatherList
-import com.vlog.app.data.videos.VideoDetail
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.screens.favorites.FavoriteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -290,7 +290,7 @@ fun VideoDetailScreen(
 
 @Composable
 fun VideoInfoSection(
-    detail: VideoDetail,
+    detail: Videos,
     favoriteViewModel: FavoriteViewModel
 ) {
     val favoriteUiState by favoriteViewModel.uiState.collectAsState()

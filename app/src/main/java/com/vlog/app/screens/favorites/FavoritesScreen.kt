@@ -26,9 +26,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.vlog.app.data.favorites.FavoritesWithVideo
-import com.vlog.app.data.favorites.toVideoDetail
-import com.vlog.app.data.videos.VideoDetail
+import com.vlog.app.data.videos.Videos
+import com.vlog.app.data.videos.toVideos
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -218,7 +217,7 @@ fun FavoritesScreen(
                         items(favoriteVideosWithVideo) { favoriteWithVideo ->
                             favoriteWithVideo.video?.let { video ->
                                 FavoriteVideoCard(
-                                    video = video.toVideoDetail(),
+                                    video = video.toVideos(),
                                     onClick = { onVideoClick(video.id) },
                                     onRemoveFavorite = {
                                         viewModel.removeFromFavorites(video.id!!) { success, message ->
@@ -237,7 +236,7 @@ fun FavoritesScreen(
 
 @Composable
 fun FavoriteVideoCard(
-    video: VideoDetail,
+    video: Videos,
     onClick: () -> Unit,
     onRemoveFavorite: () -> Unit
 ) {
@@ -282,7 +281,7 @@ fun FavoriteVideoCard(
 
 @Composable
 fun VideoDetailItem(
-    video: VideoDetail,
+    video: Videos,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {

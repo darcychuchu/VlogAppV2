@@ -2,8 +2,9 @@ package com.vlog.app.screens.videos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.data.videos.Categories
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.categories.CategoriesEntity
+import com.vlog.app.data.categories.CategoryRepository
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.data.videos.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -12,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VideoViewModel @Inject constructor(
-    private val videoRepository: VideoRepository
+    private val videoRepository: VideoRepository,
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
     
     // UI状态
@@ -20,16 +22,16 @@ class VideoViewModel @Inject constructor(
     val uiState: StateFlow<VideoUiState> = _uiState.asStateFlow()
     
     // 分类数据
-    private val _categories = MutableStateFlow<List<Categories>>(emptyList())
-    val categories: StateFlow<List<Categories>> = _categories.asStateFlow()
+    private val _categories = MutableStateFlow<List<CategoriesEntity>>(emptyList())
+    val categories: StateFlow<List<CategoriesEntity>> = _categories.asStateFlow()
     
     // 筛选条件
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
     
     // 视频列表数据
-    private val _videos = MutableStateFlow<List<VideoList>>(emptyList())
-    val videos: StateFlow<List<VideoList>> = _videos.asStateFlow()
+    private val _videos = MutableStateFlow<List<Videos>>(emptyList())
+    val videos: StateFlow<List<Videos>> = _videos.asStateFlow()
     
     // 分页状态
     private val _paginationState = MutableStateFlow(PaginationState())
@@ -44,10 +46,12 @@ class VideoViewModel @Inject constructor(
     fun loadCategories(typed: Int, forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingCategories = true)
-            
-            videoRepository.getCategories(typed, forceRefresh)
-                .onSuccess { categoriesList ->
-                    _categories.value = categoriesList
+
+            categoryRepository.refreshCategories()
+                .onSuccess {
+                    categoryRepository.getAllCategories().collect {
+                        _categories.value = it
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoadingCategories = false,
                         categoriesError = null
@@ -81,7 +85,7 @@ class VideoViewModel @Inject constructor(
             val page = if (forceRefresh) 1 else _paginationState.value.currentPage
             
             videoRepository.getFilteredVideos(
-                type = currentFilter.selectedType,
+                typed = currentFilter.selectedType,
                 categoryId = currentFilter.selectedCategoryId,
                 year = currentFilter.selectedYear,
                 sort = currentFilter.selectedSort,

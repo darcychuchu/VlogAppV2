@@ -2,8 +2,8 @@ package com.vlog.app.screens.videos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.data.videos.VideoDetail
 import com.vlog.app.data.videos.VideoRepository
+import com.vlog.app.data.videos.Videos
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +19,8 @@ class VideoDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(VideoDetailUiState())
     val uiState: StateFlow<VideoDetailUiState> = _uiState.asStateFlow()
 
-    private val _videoDetail = MutableStateFlow<VideoDetail?>(null)
-    val videoDetail: StateFlow<VideoDetail?> = _videoDetail.asStateFlow()
+    private val _videoDetail = MutableStateFlow<Videos?>(null)
+    val videoDetail: StateFlow<Videos?> = _videoDetail.asStateFlow()
 
     private val _showGatherDialog = MutableStateFlow(false)
     val showGatherDialog: StateFlow<Boolean> = _showGatherDialog.asStateFlow()

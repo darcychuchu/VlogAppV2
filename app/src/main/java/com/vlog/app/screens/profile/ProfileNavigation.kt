@@ -21,7 +21,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.vlog.app.navigation.BottomNavItem
+import com.vlog.app.navigation.NavigationRoutes
+import com.vlog.app.navigation.NavigationRoutes.MainRoute
 import com.vlog.app.screens.users.UserViewModel
 import com.vlog.app.ui.screens.profile.ProfileTopBar
 
@@ -191,7 +192,7 @@ fun NavGraphBuilder.profileNavigation(
     onNavigateToFollowers: () -> Unit = {},
     onNavigateToFollowing: () -> Unit = {}
 ) {
-    composable(BottomNavItem.Profile.route) {
+    composable(MainRoute.Profile.route) {
         ProfileNavHost(
             onNavigateToLogin = onNavigateToLogin,
             onNavigateToStoryDetail = onNavigateToStoryDetail,

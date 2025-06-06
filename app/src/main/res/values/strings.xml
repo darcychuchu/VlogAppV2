@@ -1,3 +1,139 @@
 <resources>
-    <string name="app_name">VlogAppV2</string>
+    <string name="app_name">18log.com</string>
+
+    <!-- Bottom Navigation -->
+    <string name="home">首页</string>
+    <string name="videos">影视</string>
+    <string name="publish">发布</string>
+    <string name="profile">我的</string>
+
+    <!-- Home Screen -->
+    <string name="recommended">推荐</string>
+    <string name="popular">热门</string>
+    <string name="movies">电影</string>
+    <string name="tv_series">电视剧</string>
+    <string name="anime">动漫</string>
+    <string name="variety">综艺</string>
+    <string name="sports">体育赛事</string>
+    <string name="trailers">预告片</string>
+    <string name="explanations">影视解说</string>
+    <string name="more">更多</string>
+    <string name="hot">热门</string>
+    <string name="latest">最新</string>
+
+    <!-- Filter Screen -->
+    <string name="category">分类</string>
+    <string name="sub_category">子分类</string>
+    <string name="year">年份</string>
+    <string name="sort_by">排序</string>
+    <string name="region">地区</string>
+    <string name="all">全部</string>
+    <string name="creation_time">创建时间</string>
+    <string name="update_time">更新时间</string>
+    <string name="popularity">热度</string>
+    <string name="recommendation">推荐</string>
+    <string name="apply_filter">应用</string>
+    <string name="reset_filter">重置</string>
+    <string name="no_videos_found">没有找到符合条件的视频</string>
+    <string name="loading_more">正在加载更多…</string>
+    <string name="my_functions">我的功能</string>
+
+    <!-- Videos Details -->
+    <string name="video_detail">视频详情</string>
+    <string name="director">导演: %1$s</string>
+    <string name="actors">演员: %1$s</string>
+    <string name="region_colon">地区: %1$s</string>
+    <string name="release_date">上映日期: %1$s</string>
+    <string name="duration">时长: %1$s</string>
+    <string name="score">评分: %1$s</string>
+    <string name="play">播放</string>
+    <string name="change_source">切换线路</string>
+    <string name="select_episode">选集</string>
+    <string name="detail">详情</string>
+    <string name="comments">评论</string>
+    <string name="comment_count">评论(%1$d)</string>
+    <string name="related_videos">相关视频</string>
+    <string name="recommended_for_you">猜你喜欢</string>
+    <string name="no_recommended_videos">暂无推荐视频</string>
+    <string name="post_comment">发表评论</string>
+    <string name="comment_hint">写下你的评论…</string>
+    <string name="send">发送</string>
+    <string name="no_comments">暂无评论</string>
+    <string name="description">简介</string>
+    <string name="episode_list">剧集列表</string>
+    <string name="episode_list_with_source">剧集列表 - %1$s</string>
+    <string name="back">返回</string>
+    <string name="fullscreen">全屏</string>
+    <string name="exit_fullscreen">退出全屏</string>
+
+    <!-- User Screen -->
+    <string name="watch_history">观看历史</string>
+    <string name="favorites">订阅</string>
+    <string name="settings">设置</string>
+    <string name="clear_history">清除历史</string>
+    <string name="about">关于</string>
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="logout">退出登录</string>
+    <string name="edit_profile">编辑资料</string>
+    <string name="username">用户名</string>
+    <string name="password">密码</string>
+    <string name="confirm_password">确认密码</string>
+    <string name="nickname">昵称</string>
+    <string name="app_update">应用更新</string>
+    <string name="check_update">检查更新</string>
+    <string name="current_version">当前版本: %1$s</string>
+    <string name="new_version_available">发现新版本: %1$s</string>
+    <string name="downloading">正在下载…</string>
+    <string name="download_complete">下载完成</string>
+    <string name="install">安装</string>
+    <string name="new_indicator">新</string>
+
+    <!-- Search -->
+    <string name="search">搜索</string>
+    <string name="search_hint">搜索影片、演员…</string>
+    <string name="recent_searches">最近搜索</string>
+    <string name="clear_search_history">清除搜索历史</string>
+    <string name="no_results">没有找到相关结果</string>
+    <string name="search_results">搜索结果</string>
+
+    <!-- Player -->
+    <string name="select_source">选择播放源</string>
+    <string name="episode">第 %1$s 集</string>
+    <string name="next_episode">下一集</string>
+    <string name="previous_episode">上一集</string>
+    <string name="play_speed">播放速度</string>
+    <string name="normal_speed">正常</string>
+    <string name="double_speed">2.0x</string>
+    <string name="half_speed">0.5x</string>
+
+    <!-- Error Messages -->
+    <string name="network_error">网络错误，请检查网络连接</string>
+    <string name="loading_error">加载失败，请重试</string>
+    <string name="retry">重试</string>
+    <string name="unknown_error">未知错误</string>
+    <string name="error_occurred">出错了</string>
+    <string name="check_network">请检查网络连接后重试</string>
+    <string name="no_data_available">没有可用的数据</string>
+
+    <!-- Dialog -->
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+    <string name="confirm_clear_history">确定要清除所有观看历史吗？</string>
+    <string name="confirm_logout">确定要退出登录吗？</string>
+    <string name="close">关闭</string>
+
+    <!-- User -->
+    <string name="guest">游客</string>
+    <string name="guest_user">游客用户</string>
+    <string name="welcome_message">欢迎使用VlogApp</string>
+    <string name="no_watch_history">暂无观看历史</string>
+    <string name="last_watched">上次观看: %1$s</string>
+    <string name="continue_watching">继续观看</string>
+    <string name="delete">删除</string>
+    <string name="just_now">刚刚</string>
+    <string name="minutes_ago">%1$d分钟前</string>
+    <string name="hours_ago">%1$d小时前</string>
+    <string name="days_ago">%1$d天前</string>
+    <string name="watched_progress">观看至 %1$s</string>
 </resources>

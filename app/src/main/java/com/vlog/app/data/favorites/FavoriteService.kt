@@ -1,7 +1,7 @@
 package com.vlog.app.data.favorites
 
 import com.vlog.app.data.ApiResponse
-import com.vlog.app.data.videos.VideoDetail
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.di.Constants
 import retrofit2.http.*
 
@@ -53,5 +53,5 @@ interface FavoriteService {
     suspend fun updateFavoriteVideos(
         @Path("username") username: String,
         @Query("token") token: String
-    ): ApiResponse<List<VideoDetail>>
+    ): ApiResponse<List<Videos>>
 }

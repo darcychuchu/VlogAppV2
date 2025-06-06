@@ -36,8 +36,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.vlog.app.data.histories.search.SearchHistoryEntity
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.screens.favorites.FavoriteViewModel
+import kotlin.collections.isNotEmpty
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -273,7 +274,7 @@ fun SearchHistoryItem(
 
 @Composable
 fun SearchResultsSection(
-    results: List<VideoList>,
+    results: List<Videos>,
     onVideoClick: (String) -> Unit,
     favoriteViewModel: FavoriteViewModel
 ) {
@@ -305,7 +306,7 @@ fun SearchResultsSection(
 
 @Composable
 fun SearchVideoCard(
-    video: VideoList,
+    video: Videos,
     onClick: () -> Unit,
     favoriteViewModel: FavoriteViewModel
 ) {

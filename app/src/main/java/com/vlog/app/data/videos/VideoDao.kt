@@ -13,11 +13,12 @@ interface VideoDao {
         SELECT * FROM videos 
         WHERE (:type IS NULL OR isTyped = :type)
         AND (:categoryId IS NULL OR categoryId = :categoryId)
-        AND (:year IS NULL OR publishedAt LIKE '%' || :year || '%')
+        AND (:year IS NULL OR releasedAt = :year)
         ORDER BY 
-        CASE WHEN :sort = 'latest' THEN createdAt END DESC,
-        CASE WHEN :sort = 'hot' THEN CAST(score AS REAL) END DESC,
+        CASE WHEN :sort = 'latest' THEN publishedAt END DESC,
+        CASE WHEN :sort = 'hot' THEN CAST(orderSort AS REAL) END DESC,
         CASE WHEN :sort = 'rating' THEN CAST(score AS REAL) END DESC,
+        CASE WHEN :sort = 'recommend' THEN CAST(isRecommend AS REAL) END DESC,
         createdAt DESC
         LIMIT :limit OFFSET :offset
     """)
@@ -34,7 +35,7 @@ interface VideoDao {
         SELECT COUNT(*) FROM videos 
         WHERE (:type IS NULL OR isTyped = :type)
         AND (:categoryId IS NULL OR categoryId = :categoryId)
-        AND (:year IS NULL OR publishedAt LIKE '%' || :year || '%')
+        AND (:year IS NULL OR releasedAt = :year)
     """)
     suspend fun getFilteredVideosCount(
         type: Int?,
@@ -44,26 +45,20 @@ interface VideoDao {
     
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getVideoById(id: String): VideoEntity?
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertVideos(videos: List<VideoEntity>)
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVideo(video: VideoEntity)
     
     @Update
     suspend fun updateVideo(video: VideoEntity)
-    
-    @Query("DELETE FROM videos")
-    suspend fun clearAllVideos()
-    
+
+
     @Query("DELETE FROM videos WHERE id = :id")
     suspend fun deleteVideoById(id: String)
     
     @Transaction
     suspend fun replaceAllVideos(videos: List<VideoEntity>) {
-        clearAllVideos()
-        insertVideos(videos)
+        updateVideosWithVersionCheck(videos)
     }
     
     // 根据version更新视频数据
@@ -74,8 +69,10 @@ interface VideoDao {
     suspend fun updateVideosWithVersionCheck(videos: List<VideoEntity>) {
         videos.forEach { newVideo ->
             val existingVersion = getVideoVersion(newVideo.id)
-            if (existingVersion == null || newVideo.version > existingVersion) {
+            if (existingVersion == null) {
                 insertVideo(newVideo)
+            }else if (newVideo.version > existingVersion){
+                updateVideo(newVideo)
             }
         }
     }

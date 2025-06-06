@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.histories.search.SearchHistoryEntity
 import com.vlog.app.data.histories.search.SearchRepository
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.videos.Videos
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 data class SearchUiState(
     val isLoading: Boolean = false,
-    val searchResults: List<VideoList> = emptyList(),
+    val searchResults: List<Videos> = emptyList(),
     val error: String? = null,
     val searchQuery: String = ""
 )

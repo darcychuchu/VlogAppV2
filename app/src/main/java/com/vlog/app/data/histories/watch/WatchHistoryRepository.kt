@@ -1,6 +1,6 @@
 package com.vlog.app.data.histories.watch
 
-import com.vlog.app.data.videos.VideoDetail
+import com.vlog.app.data.videos.Videos
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -73,11 +73,11 @@ class WatchHistoryRepository @Inject constructor(
     }
 
     /**
-     * 从 Video 添加观看历史
+     * 从 Videos 添加观看历史
      * 同时支持列表项和详情
      */
     suspend fun addWatchHistoryFromVideo(
-        video: VideoDetail,
+        video: Videos,
         playPosition: Long = 0,
         duration: Long = 0,
         episodeTitle: String? = null,
@@ -101,10 +101,10 @@ class WatchHistoryRepository @Inject constructor(
     }
 
     /**
-     * 从 Video 添加观看历史（兼容旧版本）
+     * 从 Videos 添加观看历史（兼容旧版本）
      */
     suspend fun addWatchHistoryFromVideoDetail(
-        videoDetail: VideoDetail,
+        videoDetail: Videos,
         playPosition: Long = 0,
         duration: Long = 0,
         episodeTitle: String? = null,

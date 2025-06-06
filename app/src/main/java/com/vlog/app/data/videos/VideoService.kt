@@ -10,13 +10,8 @@ import retrofit2.http.Query
 
 interface VideoService {
 
-    @GET(Constants.ENDPOINT_VIDEO_CATEGORIES)
-    suspend fun getCategories(
-        @Path("typed") typed: Int = 0
-    ): ApiResponse<List<Categories>>
-
     @GET(Constants.ENDPOINT_VIDEO_LIST)
-    suspend fun getVideoList(
+    suspend fun getVideos(
         @Query("typed") typed: Int = 0,
         @Query("cate") cate: String? = null,
         @Query("year") year: Int = 0,
@@ -24,7 +19,7 @@ interface VideoService {
         @Query("page") page: Int = 1,
         @Query("size") size: Int = 24,
         @Query("token") token: String? = null
-    ): ApiResponse<PaginatedResponse<VideoList>>
+    ): ApiResponse<PaginatedResponse<Videos>>
 
     @GET(Constants.ENDPOINT_VIDEO_SEARCH)
     suspend fun searchVideos(
@@ -32,11 +27,11 @@ interface VideoService {
         @Query("page") page: Int = 1,
         @Query("size") size: Int = 24,
         @Query("token") token: String? = null
-    ): ApiResponse<PaginatedResponse<VideoList>>
+    ): ApiResponse<PaginatedResponse<Videos>>
 
     @GET(Constants.ENDPOINT_VIDEO_DETAIL)
     suspend fun getVideoDetail(
         @Path("videoId") videoId: String,
         @Query("token") token: String? = null
-    ): ApiResponse<VideoDetail>
+    ): ApiResponse<Videos>
 }

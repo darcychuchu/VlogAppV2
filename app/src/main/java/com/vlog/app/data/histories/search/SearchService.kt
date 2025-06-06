@@ -1,7 +1,7 @@
 package com.vlog.app.data.histories.search
 
 import com.vlog.app.data.ApiResponse
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.di.Constants
 import retrofit2.http.*
 
@@ -14,5 +14,5 @@ interface SearchService {
     @GET(Constants.ENDPOINT_VIDEO_SEARCH)
     suspend fun searchVideos(
         @Query("key") key: String? = null
-    ): ApiResponse<List<VideoList>>
+    ): ApiResponse<List<Videos>>
 }

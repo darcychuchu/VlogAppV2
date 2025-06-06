@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Build
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.vlog.app.data.categories.CategoryDao
+import com.vlog.app.data.categories.CategoryService
 import com.vlog.app.data.database.VlogDatabase
 import com.vlog.app.data.favorites.FavoriteService
 import com.vlog.app.data.favorites.FavoritesDao
@@ -11,10 +13,8 @@ import com.vlog.app.data.histories.search.SearchHistoryDao
 import com.vlog.app.data.histories.search.SearchRepository
 import com.vlog.app.data.histories.search.SearchService
 import com.vlog.app.data.histories.watch.WatchHistoryDao
-import com.vlog.app.data.histories.watch.WatchHistoryRepository
 import com.vlog.app.data.stories.StoriesService
 import com.vlog.app.data.users.UserService
-import com.vlog.app.data.videos.CategoryDao
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoService
 import com.vlog.app.data.versions.AppUpdateService
@@ -103,6 +103,13 @@ object NetworkModule {
     @Provides
     fun provideVideoDao(database: VlogDatabase): VideoDao {
         return database.videoDao()
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideCategoryService(retrofit: Retrofit): CategoryService {
+        return retrofit.create(CategoryService::class.java)
     }
 
     @Provides

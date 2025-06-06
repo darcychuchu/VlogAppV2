@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.histories.search.SearchHistoryEntity
 import com.vlog.app.data.histories.search.SearchRepository
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.videos.Videos
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,14 +20,14 @@ class SearchViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     
-    private val _searchResults = MutableStateFlow<List<VideoList>>(emptyList())
-    val searchResults: StateFlow<List<VideoList>> = _searchResults.asStateFlow()
+    private val _searchResults = MutableStateFlow<List<Videos>>(emptyList())
+    val searchResults: StateFlow<List<Videos>> = _searchResults.asStateFlow()
     
     private val _searchHistory = MutableStateFlow<List<SearchHistoryEntity>>(emptyList())
     val searchHistory: StateFlow<List<SearchHistoryEntity>> = _searchHistory.asStateFlow()
     
-    private val _hotSearches = MutableStateFlow<List<VideoList>>(emptyList())
-    val hotSearches: StateFlow<List<VideoList>> = _hotSearches.asStateFlow()
+    private val _hotSearches = MutableStateFlow<List<Videos>>(emptyList())
+    val hotSearches: StateFlow<List<Videos>> = _hotSearches.asStateFlow()
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

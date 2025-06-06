@@ -4,18 +4,21 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
+import com.vlog.app.data.categories.CategoryDao
+import com.vlog.app.data.categories.CategoriesEntity
 import com.vlog.app.data.favorites.FavoritesDao
 import com.vlog.app.data.favorites.FavoritesEntity
 import com.vlog.app.data.histories.search.SearchHistoryDao
 import com.vlog.app.data.histories.search.SearchHistoryEntity
 import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.histories.watch.WatchHistoryEntity
-import com.vlog.app.data.videos.*
+import com.vlog.app.data.videos.VideoDao
+import com.vlog.app.data.videos.VideoEntity
 
 @Database(
     entities = [
         VideoEntity::class,
-        CategoryEntity::class,
+        CategoriesEntity::class,
         FavoritesEntity::class,
         WatchHistoryEntity::class,
         SearchHistoryEntity::class

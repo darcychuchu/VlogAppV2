@@ -39,9 +39,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-
-import com.vlog.app.data.videos.Categories
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.categories.CategoriesEntity
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.screens.favorites.FavoriteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,7 +195,7 @@ fun VideosScreen(
 // 筛选条件组件
 @Composable
 fun FilterSection(
-    categories: List<Categories>,
+    categories: List<CategoriesEntity>,
     filterState: FilterState,
     onFilterChanged: (Int, String?, Int, Int) -> Unit,
     modifier: Modifier = Modifier
@@ -298,14 +297,14 @@ fun <T> FilterRow(
 // 视频网格组件
 @Composable
 fun VideoGridSection(
-    videos: List<VideoList>,
+    videos: List<Videos>,
     isLoading: Boolean,
     isLoadingMore: Boolean,
     hasMorePages: Boolean,
     error: String?,
     gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     favoriteViewModel: FavoriteViewModel,
-    onVideoClick: (VideoList) -> Unit,
+    onVideoClick: (Videos) -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -437,7 +436,7 @@ fun VideoGridSection(
 // 视频项组件
 @Composable
 fun VideoItem(
-    video: VideoList,
+    video: Videos,
     favoriteViewModel: FavoriteViewModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier

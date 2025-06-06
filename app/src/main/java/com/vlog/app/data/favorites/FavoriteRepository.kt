@@ -1,14 +1,11 @@
 package com.vlog.app.data.favorites
 
 import android.util.Log
-import com.vlog.app.data.favorites.FavoritesDao
-import com.vlog.app.data.favorites.FavoritesEntity
-import com.vlog.app.data.favorites.FavoritesWithVideo
 import com.vlog.app.data.users.UserSessionManager
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoEntity
+import com.vlog.app.data.videos.Videos
 import com.vlog.app.data.videos.toEntity
-import com.vlog.app.data.videos.VideoDetail
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -70,12 +67,10 @@ class FavoriteRepository @Inject constructor(
     suspend fun syncFavoritesFromServer(username: String, token: String): Result<List<Favorites>> {
         return try {
             val response = favoriteService.getFavorites(username, token)
-            Log.d("1---",response.toString())
             if (response.code == 200) {
                 val favoritesList = response.data ?: emptyList()
                 // 将服务器数据转换为本地实体并保存
                 val entities = favoritesList.map { it.toEntity() }
-                Log.d("2---",entities.toString())
                 favoritesDao.insertFavoriteVideos(entities)
 
                 Log.d("3---",entities.toString())
@@ -85,7 +80,7 @@ class FavoriteRepository @Inject constructor(
                 if (videoDetailsResponse.code == 200) {
                     val videoDetailsList = videoDetailsResponse.data ?: emptyList()
                     val videoEntities = videoDetailsList.map { it.toEntity() }
-                    videoDao.insertVideos(videoEntities)
+                    videoDao.updateVideosWithVersionCheck(videoEntities)
                 }
                 
                 Result.success(favoritesList)
@@ -139,10 +134,10 @@ class FavoriteRepository @Inject constructor(
     /**
      * 同步订阅视频数据
      * 适合老用户，用原账户登录，同步功能
-     * 返回的List<VideoDetail> --> 比对videolist的本地表数据，写入没有的video Id数据
+     * 返回的List<VideoDetail> --> 比对Videos的本地表数据，写入没有的video Id数据
      * 限制5分钟才能执行一次
      */
-    suspend fun updateFavoriteVideos(username: String, token: String, forceUpdate: Boolean = false): Result<List<VideoDetail>> {
+    suspend fun updateFavoriteVideos(username: String, token: String, forceUpdate: Boolean = false): Result<List<Videos>> {
         // 检查更新间隔限制
         val currentTime = System.currentTimeMillis()
 //        if (!forceUpdate && (currentTime - lastUpdateTime) < UPDATE_INTERVAL_MS) {
@@ -155,7 +150,7 @@ class FavoriteRepository @Inject constructor(
             if (response.code == 200) {
                 val videoDetailsList = response.data ?: emptyList()
                 
-                // 比对本地videolist表数据，写入缺失的视频数据
+                // 比对本地Videos表数据，写入缺失的视频数据
                 val newVideoEntities = mutableListOf<VideoEntity>()
                 val newFavoriteEntities = mutableListOf<FavoritesEntity>()
                 
@@ -187,7 +182,7 @@ class FavoriteRepository @Inject constructor(
                 
                 // 批量插入新视频数据
                 if (newVideoEntities.isNotEmpty()) {
-                    videoDao.insertVideos(newVideoEntities)
+                    videoDao.updateVideosWithVersionCheck(newVideoEntities)
                 }
                 
                 // 批量插入新订阅记录
@@ -213,48 +208,7 @@ class FavoriteRepository @Inject constructor(
     }
 }
 
-/**
- * 数据转换扩展函数
- */
-fun VideoDetail.toEntity(): VideoEntity {
-    return VideoEntity(
-        id = this.id ?: "",
-        version = this.version ?: 0,
-        isTyped = this.isTyped,
-        publishedAt = this.publishedAt,
-        categoryId = this.categoryId,
-        title = this.title,
-        score = this.score,
-        tags = this.tags,
-        remarks = this.remarks,
-        coverUrl = this.coverUrl
-    )
-}
 
-fun VideoEntity.toVideoDetail(): VideoDetail {
-    return VideoDetail(
-        id = this.id,
-        version = this.version,
-        isTyped = this.isTyped,
-        publishedAt = this.publishedAt,
-        categoryId = this.categoryId,
-        title = this.title,
-        score = this.score,
-        alias = null,
-        director = null,
-        actors = null,
-        region = null,
-        language = null,
-        description = null,
-        tags = this.tags,
-        author = null,
-        remarks = this.remarks,
-        coverUrl = this.coverUrl,
-        gatherList = mutableListOf(),
-        duration = null,
-        episodeCount = null
-    )
-}
 
 fun Favorites.toEntity(): FavoritesEntity {
     return FavoritesEntity(

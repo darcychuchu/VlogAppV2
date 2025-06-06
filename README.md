@@ -110,7 +110,7 @@ app/src/main/java/com/vlog/app/
 │   │   ├── UserDataRepository.kt  # 用户本地数据仓库
 │   │   └── UserSessionManager.kt  # 用户会话管理
 │   └── videos/                    # 视频相关数据
-│       ├── VideoList.kt           # 视频列表模型
+│       ├── Videos.kt           # 视频列表模型
 │       ├── VideoDetail.kt         # 视频详情模型
 │       ├── Categories.kt          # 分类模型
 │       ├── GatherList.kt          # 集数列表模型
@@ -210,7 +210,7 @@ GET videos/list?typed={typed}&page={page}&size={size}&year={year}&order_by={orde
 - `token`: 用户令牌 (可选)
 
 返回数据模型：
-data class VideoList
+data class Videos
 
 ##### Videos Detail API
 ```
@@ -261,7 +261,7 @@ POST `videos/favorites-videos/{username}?token={token}` //更新订阅视频数�
    - 类名: 使用 PascalCase (如 `VideoRepository`)
    - 函数名: 使用 camelCase (如 `loadHomeData()`)
    - 常量: 使用 UPPER_SNAKE_CASE (如 `API_BASE_URL`)
-   - 变量: 使用 camelCase (如 `videoList`)
+   - 变量: 使用 camelCase (如 `Videos`)
 
 2. **注释规范**
    - 为所有公共 API 添加 KDoc 注释
@@ -317,7 +317,7 @@ POST `videos/favorites-videos/{username}?token={token}` //更新订阅视频数�
 - ✅ **用户会话管理**: UserSessionManager
 
 #### 3. 视频系统
-- ✅ **视频数据模型**: VideoList, VideoDetail, Categories, GatherList, PlayList 等完整数据模型
+- ✅ **视频数据模型**: Videos, VideoDetail, Categories, GatherList, PlayList 等完整数据模型
 - ✅ **视频API服务**: VideoService 接口定义，符合 API 规范，包含详情页面 API
 - ✅ **视频仓库**: VideoRepository 和 VideoDataRepository 实现，支持详情数据获取
 - ✅ **视频ViewModel**: 完整的视频状态管理和筛选逻辑

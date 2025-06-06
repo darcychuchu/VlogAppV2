@@ -1,6 +1,6 @@
 package com.vlog.app.data.histories.search
 
-import com.vlog.app.data.videos.VideoList
+import com.vlog.app.data.videos.Videos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -18,7 +18,7 @@ class SearchRepository(
      * @param key 搜索关键词，为空时返回热门搜索
      * @return 搜索结果列表
      */
-    suspend fun searchVideos(key: String? = null): List<VideoList>? {
+    suspend fun searchVideos(key: String? = null): List<Videos>? {
         return withContext(Dispatchers.IO) {
             searchService.searchVideos(key).data
         }

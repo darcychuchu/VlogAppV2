@@ -37,8 +37,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.vlog.app.navigation.Screen
 import com.vlog.app.data.histories.watch.WatchHistoryEntity
+import com.vlog.app.navigation.NavigationRoutes
 
 /**
  * 观看历史页面
@@ -80,11 +80,11 @@ fun WatchHistoryScreen(
             uiState = uiState,
             onItemClick = { watchHistory ->
                 // 从观看历史继续观看，传递播放参数
-                val route = Screen.VideoDetail.createRoute(
+                val route = NavigationRoutes.FullScreenRoute.VideoPlayer.createRoute(
                     videoId = watchHistory.videoId,
-                    gatherId = watchHistory.gatherId,
-                    playerUrl = watchHistory.playerUrl,
-                    episodeTitle = watchHistory.episodeTitle,
+                    gatherId = watchHistory.gatherId ?: "",
+                    url = watchHistory.playerUrl ?: "",
+                    episodeTitle = watchHistory.episodeTitle ?: "",
                     lastPlayedPosition = watchHistory.lastPlayedPosition,
                     episodeIndex = watchHistory.episodeIndex
                 )

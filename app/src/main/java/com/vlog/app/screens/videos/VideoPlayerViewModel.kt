@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
-import com.vlog.app.data.videos.VideoDetail
+import com.vlog.app.data.videos.Videos
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
@@ -54,7 +54,7 @@ class VideoPlayerViewModel @Inject constructor(
     private val _playlistState = MutableStateFlow(PlaylistState())
     val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
     
-    fun initializePlaylist(videoDetail: VideoDetail, gatherList: List<GatherList>, gatherIndex: Int = 0, playIndex: Int = 0) {
+    fun initializePlaylist(videoDetail: Videos, gatherList: List<GatherList>, gatherIndex: Int = 0, playIndex: Int = 0) {
         viewModelScope.launch {
             val currentGather = gatherList.getOrNull(gatherIndex)
             val currentPlayList = currentGather?.playList ?: emptyList()

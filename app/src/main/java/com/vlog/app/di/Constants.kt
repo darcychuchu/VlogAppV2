@@ -23,7 +23,7 @@ object Constants {
     const val ENDPOINT_VIDEO_COMMENTS = "videos/comments/{videoId}"
     const val ENDPOINT_VIDEO_DETAIL = "videos/detail/{videoId}"
     const val ENDPOINT_VIDEO_LIST = "videos/list"
-    const val ENDPOINT_VIDEO_CATEGORIES = "videos/categories/{typed}"
+    const val ENDPOINT_VIDEO_CATEGORIES = "videos/categories"
     const val ENDPOINT_VIDEO_SEARCH = "videos/search"
 
     // favorites
