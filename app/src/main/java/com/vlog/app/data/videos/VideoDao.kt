@@ -58,12 +58,20 @@ interface VideoDao {
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getVideoById(id: String): VideoEntity?
 
+    @Query("SELECT * FROM videos WHERE id = :id")
+    fun getVideoByIdFlow(id: String): Flow<VideoEntity?>
+
+    @Query("SELECT * FROM videos WHERE id = :id")
+    suspend fun getVideoByIdSuspend(id: String): VideoEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVideo(video: VideoEntity)
     
     @Update
     suspend fun updateVideo(video: VideoEntity)
 
+    @Query("UPDATE videos SET gatherListVersion = :version WHERE id = :videoId")
+    suspend fun updateGatherListVersion(videoId: String, version: String?)
 
     @Query("DELETE FROM videos WHERE id = :id")
     suspend fun deleteVideoById(id: String)
@@ -78,13 +86,37 @@ interface VideoDao {
     suspend fun getVideoVersion(id: String): Int?
     
     @Transaction
-    suspend fun updateVideosWithVersionCheck(videos: List<VideoEntity>) {
-        videos.forEach { newVideo ->
-            val existingVersion = getVideoVersion(newVideo.id)
-            if (existingVersion == null) {
-                insertVideo(newVideo)
-            }else if (newVideo.version > existingVersion){
-                updateVideo(newVideo)
+    suspend fun updateVideosWithVersionCheck(videosFromListDto: List<VideoEntity>) {
+        videosFromListDto.forEach { videoFromListDto ->
+            val existingEntity = getVideoByIdSuspend(videoFromListDto.id)
+            if (existingEntity == null) {
+                insertVideo(videoFromListDto)
+            } else if (videoFromListDto.version > existingEntity.version) {
+                val updatedEntity = existingEntity.copy(
+                    // Fields typically authoritative in a ListDto
+                    version = videoFromListDto.version,
+                    title = videoFromListDto.title,
+                    coverUrl = videoFromListDto.coverUrl,
+                    isTyped = videoFromListDto.isTyped,
+                    remarks = videoFromListDto.remarks,
+                    categoryId = videoFromListDto.categoryId,
+                    orderSort = videoFromListDto.orderSort,
+                    publishedAt = videoFromListDto.publishedAt,
+                    isRecommend = videoFromListDto.isRecommend,
+                    releasedAt = videoFromListDto.releasedAt,
+                    score = videoFromListDto.score,
+                    tags = videoFromListDto.tags,
+                    duration = videoFromListDto.duration,
+                    episodeCount = videoFromListDto.episodeCount
+
+                    // Fields like alias, director, actors, region, language, description, author
+                    // are NOT copied from videoFromListDto here, as videoFromListDto is assumed
+                    // to be from a list response and may not have authoritative values for these details.
+                    // lastRefreshed and gatherListVersion are also intentionally not copied,
+                    // preserving their values from existingEntity.
+                    // id and createdAt also retain their values from existingEntity by default with copy.
+                )
+                updateVideo(updatedEntity)
             }
         }
     }

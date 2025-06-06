@@ -21,7 +21,8 @@ import com.vlog.app.data.videos.VideoEntity
         CategoriesEntity::class,
         FavoritesEntity::class,
         WatchHistoryEntity::class,
-        SearchHistoryEntity::class
+        SearchHistoryEntity::class,
+        GatherItemEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -33,6 +34,7 @@ abstract class VlogDatabase : RoomDatabase() {
     abstract fun favoritesDao(): FavoritesDao
     abstract fun watchHistoryDao(): WatchHistoryDao
     abstract fun searchHistoryDao(): SearchHistoryDao
+    abstract fun gatherItemDao(): GatherItemDao
 
     companion object {
         @Volatile

@@ -38,7 +38,7 @@ class FilterViewModel @Inject constructor(
         loadSubCategories(defaultCategoryId)
 
         // 加载筛选列表
-        loadFilteredVideos(forceRefresh = false)
+        loadFilteredVideos()
     }
 
     /**
@@ -114,7 +114,7 @@ class FilterViewModel @Inject constructor(
         }
 
         // 自动应用筛选条件
-        loadFilteredVideos(forceRefresh = false)
+        loadFilteredVideos()
     }
 
     /**
@@ -166,11 +166,11 @@ class FilterViewModel @Inject constructor(
         loadSubCategories(_uiState.value.selectedCategory.id)
 
         // 加载筛选列表
-        loadFilteredVideos(forceRefresh = false)
+        loadFilteredVideos()
     }
 
     fun applyFilters() {
-        loadFilteredVideos(forceRefresh = false)
+        loadFilteredVideos()
     }
 
     /**
@@ -189,7 +189,7 @@ class FilterViewModel @Inject constructor(
                 loadMainCategories()
 
                 // 重新加载视频列表
-                loadFilteredVideos(forceRefresh = true)
+                loadFilteredVideos()
 
                 _uiState.update { it.copy(isRefreshing = false) }
             } catch (e: Exception) {
@@ -203,7 +203,7 @@ class FilterViewModel @Inject constructor(
         }
     }
 
-    private fun loadFilteredVideos(forceRefresh: Boolean = false) {
+    private fun loadFilteredVideos() {
         _uiState.update { it.copy(
             isLoading = true,
             error = null,
@@ -229,8 +229,8 @@ class FilterViewModel @Inject constructor(
                 categoryId = cate,
                 year = year ?: 0, // Default to 0 if year is null
                 sort = orderBy ?: 0, // Default to 0 if sort is null
-                page = 1, // Always page 1 for initial load
-                forceRefresh = forceRefresh
+                page = 1 // Always page 1 for initial load
+                // forceRefresh argument removed
             )
 
             result.fold(
@@ -291,8 +291,8 @@ class FilterViewModel @Inject constructor(
                     categoryId = cate,
                     year = year ?: 0, // Default to 0 if year is null
                     sort = orderBy ?: 0, // Default to 0 if sort is null
-                    page = nextPage,
-                    forceRefresh = false // Pagination should not force refresh
+                    page = nextPage
+                    // forceRefresh argument removed
                 )
 
                 result.fold(

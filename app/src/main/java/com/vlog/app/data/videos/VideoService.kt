@@ -34,4 +34,13 @@ interface VideoService {
         @Path("videoId") videoId: String,
         @Query("token") token: String? = null
     ): ApiResponse<Videos>
+
+    // Assuming GatherItem is at com.vlog.app.data.videos.GatherItem
+    // Assuming ApiResponse is at com.vlog.app.data.ApiResponse
+    // The actual API endpoint path needs to be defined with @GET, e.g., @GET("videos/{id}/gatherlist")
+    @GET("videos/{id}/gatherlist") // Example endpoint
+    suspend fun getGatherList(
+        @Path("id") videoId: String, // Or @Query("videoId") depending on API design
+        @Query("version") version: String? // Local version, nullable if client has no version yet
+    ): ApiResponse<List<GatherItem>>
 }
