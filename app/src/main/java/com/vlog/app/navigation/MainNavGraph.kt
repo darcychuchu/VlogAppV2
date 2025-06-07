@@ -109,21 +109,6 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
 private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController) {
 
     composable(
-        route = "${NavigationRoutes.FullScreenRoute.FilterDetail.route}?videoId={videoId}",
-        arguments = listOf(
-            navArgument("videoId") { type = NavType.StringType }
-        )
-    ) { backStackEntry ->
-        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
-        FilterDetailScreen(
-            videoId = videoId,
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
-    }
-
-    composable(
         route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}",
         arguments = listOf(
             navArgument("videoId") { type = NavType.StringType }
@@ -277,6 +262,21 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
                 navController.navigate(NavigationRoutes.MainRoute.Home.route) {
                     popUpTo(NavigationRoutes.OtherRoute.Register.route) { inclusive = true }
                 }
+            }
+        )
+    }
+
+    composable(
+        route = "${NavigationRoutes.OtherRoute.FilterDetail.route}?videoId={videoId}",
+        arguments = listOf(
+            navArgument("videoId") { type = NavType.StringType }
+        )
+    ) { backStackEntry ->
+        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+        FilterDetailScreen(
+            videoId = videoId,
+            onNavigateBack = {
+                navController.popBackStack()
             }
         )
     }

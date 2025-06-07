@@ -1,6 +1,5 @@
 package com.vlog.app.screens.filter
 
-import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -131,7 +130,7 @@ fun FilterScreen(
                                 VideoCardCompact(
                                     video = video,
                                     onClick = {
-                                        navController.navigate("file_detail/${video.id}")
+                                        navController.navigate("filter_detail/${video.id}")
                                     }
                                 )
                             }

@@ -1,4 +1,4 @@
-package com.vlog.app.screens.components
+package com.vlog.app.screens.videos
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -65,7 +65,7 @@ fun GatherListDialog(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     IconButton(
                         onClick = onDismiss
                     ) {
@@ -76,7 +76,7 @@ fun GatherListDialog(
                         )
                     }
                 }
-                
+
                 // 集数列表
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
