@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage // Assuming Coil is used for image loading
+import com.vlog.app.screens.components.GatherListDialog
+// import com.vlog.app.data.videos.GatherList // Not strictly needed here if uiState handles the type
 // import com.vlog.app.R // If you need string resources
 // import androidx.navigation.NavController // If needed for back navigation
 
@@ -91,7 +93,37 @@ fun FilterDetailScreen(
                         // For example:
                         // uiState.gatherList.forEach { item -> Text(item.name) }
 
-                        // Show a subtle loading indicator if background refresh is happening
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // GatherList Section
+                        when {
+                            uiState.isGatherListLoading -> {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
+                            }
+                            uiState.gatherListError != null -> {
+                                Text(
+                                    text = "Error loading episodes: ${uiState.gatherListError}",
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            }
+                            !uiState.gatherList.isNullOrEmpty() -> {
+                                Button(
+                                    onClick = { viewModel.onShowGatherListDialog() },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("播放列表") // "Episode List" or "Show Episodes"
+                                }
+                            }
+                            else -> {
+                                Text(
+                                    "No episodes available.",
+                                     modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            }
+                        }
+
+                        // Show a subtle loading indicator if background refresh is happening for the main video detail
                         if (uiState.isLoading && uiState.video != null) {
                              Spacer(modifier = Modifier.height(16.dp))
                              CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
@@ -101,6 +133,26 @@ fun FilterDetailScreen(
                 else -> { // Should not happen if logic is correct, but as a fallback
                     Text("No video data available.", modifier = Modifier.align(Alignment.Center)) // Replace with stringResource
                 }
+            }
+
+            // Display GatherListDialog
+            if (uiState.showGatherListDialog && !uiState.gatherList.isNullOrEmpty()) {
+                GatherListDialog(
+                    gatherList = uiState.gatherList!!,
+                    currentGatherIndex = 0, // Placeholder
+                    currentPlayIndex = 0, // Placeholder
+                    onGatherSelected = { gatherIdx, playIdx ->
+                        // Log or handle selection if needed in ViewModel
+                        // viewModel.handleGatherSelection(gatherIdx, playIdx)
+                        viewModel.onDismissGatherListDialog() // Dialog itself also calls onDismiss
+                    },
+                    onPlaySourceSelected = { playIdx ->
+                        // Log or handle selection if needed in ViewModel
+                        // viewModel.handlePlaySourceSelection(playIdx)
+                        viewModel.onDismissGatherListDialog() // Dialog itself also calls onDismiss
+                    },
+                    onDismiss = { viewModel.onDismissGatherListDialog() }
+                )
             }
         }
     }

@@ -3,7 +3,8 @@ package com.vlog.app.screens.filter // Or com.vlog.app.screens.videos
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.data.database.Resource // Assuming this is the correct Resource path
+import com.vlog.app.data.database.Resource
+import com.vlog.app.data.videos.GatherList // Assuming this is the correct Resource path
 import com.vlog.app.data.videos.VideoEntity
 import com.vlog.app.data.videos.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,10 @@ data class FilterDetailUiState(
     val video: VideoEntity? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    // Potentially add gatherList items here later if needed
+    val gatherList: List<com.vlog.app.data.videos.GatherList>? = null,
+    val isGatherListLoading: Boolean = false,
+    val gatherListError: String? = null,
+    val showGatherListDialog: Boolean = false
 )
 
 @HiltViewModel
@@ -38,8 +42,35 @@ class FilterDetailViewModel @Inject constructor(
         if (videoId.isNotBlank()) {
             observeLocalVideoDetail()
             checkAndFetchRemoteVideoDetail()
+            fetchGatherList()
         } else {
             _uiState.update { it.copy(error = "Video ID is missing", isLoading = false) }
+        }
+    }
+
+    private fun fetchGatherList() {
+        if (videoId.isNotBlank()) {
+            viewModelScope.launch {
+                videoRepository.getGatherList(videoId).collectLatest { resource ->
+                    _uiState.update { currentState ->
+                        when (resource) {
+                            is Resource.Loading -> currentState.copy(
+                                isGatherListLoading = true,
+                                gatherListError = null
+                            )
+                            is Resource.Success -> currentState.copy(
+                                isGatherListLoading = false,
+                                gatherList = resource.data ?: emptyList(),
+                                gatherListError = null
+                            )
+                            is Resource.Error -> currentState.copy(
+                                isGatherListLoading = false,
+                                gatherListError = resource.message
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -122,6 +153,15 @@ class FilterDetailViewModel @Inject constructor(
                     }
                 }
             }
+            fetchGatherList()
         }
+    }
+
+    fun onShowGatherListDialog() {
+        _uiState.update { it.copy(showGatherListDialog = true) }
+    }
+
+    fun onDismissGatherListDialog() {
+        _uiState.update { it.copy(showGatherListDialog = false) }
     }
 }
