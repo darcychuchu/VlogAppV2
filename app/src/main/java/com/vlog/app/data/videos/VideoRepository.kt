@@ -1,10 +1,12 @@
 package com.vlog.app.data.videos
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.vlog.app.data.PaginatedResponse
 import com.vlog.app.data.database.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -117,13 +119,11 @@ class VideoRepository @Inject constructor(
         result.fold(
             onSuccess = { videoDto ->
                 val videoEntity = videoDto.toEntity()
-                videoEntity.lastRefreshed = System.currentTimeMillis()
                 try {
-                    videoDao.insertVideo(videoEntity) // This is a suspend fun
-                    // After inserting, we might want to emit the entity from the DB via a new fetch
-                    // or trust that the inserted entity is what we want to show immediately.
-                    // For simplicity here, emitting the transformed entity directly.
+                    videoEntity.lastRefreshed = System.currentTimeMillis()
+                    videoDao.insertVideo(videoEntity)
                     emit(Resource.Success(videoEntity))
+                    return@flow
                 } catch (dbException: Exception) {
                     emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
                 }
@@ -134,47 +134,60 @@ class VideoRepository @Inject constructor(
         )
     }.flowOn(Dispatchers.IO)
 
-    fun getGatherList(videoId: String, gatherListVersion: Int): Flow<Resource<List<GatherItem>>> = flow {
+
+    fun getGatherList(videoId: String): Flow<Resource<List<GatherList>>> = flow {
         emit(Resource.Loading())
+        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+        val listType = Types.newParameterizedType(List::class.java, GatherList::class.java)
+        val gatherListAdapter = moshi.adapter<List<GatherList>>(listType)
+
         try {
-            val apiResponse = videoService.getGatherList(videoId, gatherListVersion)
+            val cachedEntity = gatherItemDao.getGatherItemSync(videoId)
+            val currentTime = System.currentTimeMillis()
 
-            if (apiResponse.code == 200) {
-                val gatherItemsDto = apiResponse.data
-
-                if (gatherItemsDto != null && gatherItemsDto.isNotEmpty()) {
-                    // New data from API
-                    val gatherEntities = gatherItemsDto.map { it.toEntity() } // Assumes GatherItem.toEntity() exists
-
-                    // Save new items (potentially clear old ones first for this videoId)
-                    gatherItemDao.deleteGatherItemsForVideo(videoId) // Clear old episodes
-                    gatherItemDao.insertAll(gatherEntities)         // Insert new ones
-
-                    // Update the VideoEntity's gatherListVersion
-                    // Assuming the API response includes the new version, or we generate one.
-                    // For now, let's assume API response doesn't directly give a new version string.
-                    // We could use a timestamp or hash of content if needed, or the API *should* provide it.
-                    // Let's make a simplifying assumption: if new data is sent, we update version to a new timestamp.
-                    // A more robust solution would be for the API to return the new version string.
-                    val newVersion = System.currentTimeMillis().toString() // Placeholder for actual versioning
-                    videoDao.updateGatherListVersion(videoId, newVersion)
-
-                    emit(Resource.Success(gatherItemsDto))
-                } else {
-                    // API returned empty list or null, meaning no changes or no data for this version.
-                    // Load local data from DAO.
-                    // This branch means the server has confirmed currentLocalVersion is up-to-date OR there are no items.
-                    val localGatherEntities = gatherItemDao.getGatherItemsForVideo(videoId).firstOrNull() ?: emptyList()
-                    val localGatherDtos = localGatherEntities.map { it.toDto() } // Assumes GatherItemEntity.toDto() exists
-                    emit(Resource.Success(localGatherDtos))
+            if (cachedEntity != null) {
+                if (currentTime - cachedEntity.lastUpdated < 3600000L) { // 1 hour in milliseconds
+                    if (!cachedEntity.gatherListJson.isNullOrBlank()) {
+                        val gatherList: List<GatherList>? = gatherListAdapter.fromJson(cachedEntity.gatherListJson)
+                        if (gatherList != null) {
+                            emit(Resource.Success(gatherList))
+                        }
+                    } else {
+                        emit(Resource.Success(emptyList()))
+                    }
+                    return@flow
                 }
-            } else {
-                // API error
-                emit(Resource.Error("Failed to fetch gather list: ${apiResponse.message} (Code: ${apiResponse.code})"))
             }
+
+            val gatherListVersion = cachedEntity?.version ?: -1
+            val apiResponse = videoService.getGatherList(videoId, gatherListVersion)
+            if (apiResponse.code == 200) {
+                val serverGatherItems: GatherItem? = apiResponse.data
+                if (serverGatherItems != null && serverGatherItems.gatherList?.isNotEmpty() == true) {
+                    val newVersion = serverGatherItems.version
+                    val actualEpisodeList: List<GatherList> = serverGatherItems.gatherList!!
+                    try {
+                        val jsonGatherList = gatherListAdapter.toJson(actualEpisodeList)
+                        val newEntity = GatherItemEntity(
+                            videoId = videoId,
+                            version = newVersion,
+                            gatherListJson = jsonGatherList,
+                            lastUpdated = System.currentTimeMillis()
+                        )
+                        gatherItemDao.insertItem(newEntity)
+                        emit(Resource.Success(actualEpisodeList))
+
+                    } catch (dbException: Exception) {
+                        emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
+                    }
+                }
+                return@flow
+            } else { // API error
+                emit(Resource.Error("API error code: ${apiResponse.code} - ${apiResponse.message}", null))
+            }
+
         } catch (e: Exception) {
-            // Network or other exception
-            emit(Resource.Error("Failed to fetch gather list: ${e.message ?: "Unknown error"}"))
+            emit(Resource.Error(e.message ?: "Unknown error fetching gather list", null))
         }
     }.flowOn(Dispatchers.IO)
 }

@@ -33,8 +33,7 @@ data class VideoEntity(
     val duration: String? = null,
     val episodeCount: Int? = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    var lastRefreshed: Long? = null,
-    var gatherListVersion: String? = null
+    var lastRefreshed: Long? = null
 )
 
 // 扩展函数：Videos -> VideoEntity

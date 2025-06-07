@@ -70,8 +70,6 @@ interface VideoDao {
     @Update
     suspend fun updateVideo(video: VideoEntity)
 
-    @Query("UPDATE videos SET gatherListVersion = :version WHERE id = :videoId")
-    suspend fun updateGatherListVersion(videoId: String, version: String?)
 
     @Query("DELETE FROM videos WHERE id = :id")
     suspend fun deleteVideoById(id: String)
