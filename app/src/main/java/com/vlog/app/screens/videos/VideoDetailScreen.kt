@@ -29,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.Videos
+import com.vlog.app.screens.components.GatherListDialog
 import com.vlog.app.screens.favorites.FavoriteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -271,7 +272,7 @@ fun VideoDetailScreen(
     
     // 播放列表对话框
     if (showPlaylistDialog) {
-        PlaylistDialog(
+        GatherListDialog(
             gatherList = playlistState.gatherList,
             currentGatherIndex = playlistState.currentGatherIndex,
             currentPlayIndex = playlistState.currentPlayIndex,

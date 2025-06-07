@@ -1,4 +1,4 @@
-package com.vlog.app.screens.videos
+package com.vlog.app.screens.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,7 +24,7 @@ import com.vlog.app.data.videos.PlayList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaylistDialog(
+fun GatherListDialog(
     gatherList: List<GatherList>,
     currentGatherIndex: Int,
     currentPlayIndex: Int,

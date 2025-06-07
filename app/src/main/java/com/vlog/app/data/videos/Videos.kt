@@ -25,5 +25,6 @@ data class Videos(
     val duration: String? = null,
     val episodeCount: Int? = null,
 
+    val gatherListVersion: Int? = null,
     var gatherList: MutableList<GatherList>? = mutableListOf(),
 )

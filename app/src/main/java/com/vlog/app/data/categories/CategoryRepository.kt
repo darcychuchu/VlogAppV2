@@ -93,8 +93,6 @@ class CategoryRepository @Inject constructor(
                 val categories = categoriesResult.getOrNull() ?: emptyList()
                 val categoryEntities = processCategoryTree(categories)
                 categoryDao.refreshCategories(categoryEntities)
-                Log.e(TAG, "${categories} ")
-                Log.e(TAG, "${categoryEntities} ")
                 Result.success(true)
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing or saving categories", e)
@@ -139,7 +137,6 @@ class CategoryRepository @Inject constructor(
 
         // 递归处理分类树
         fun processCategory(categories: Categories, parentId: String?) {
-            val childrenIds = categories.categoryList.joinToString(",") { it.id }
 
             // 创建分类实体
             val categoriesEntity = CategoriesEntity(
@@ -148,13 +145,11 @@ class CategoryRepository @Inject constructor(
                 parentId = parentId,
                 modelId = categories.modelId,
                 modelTyped = categories.modelTyped,
-                childrenIds = childrenIds,
                 orderSort = categories.orderSort,
                 lastUpdated = System.currentTimeMillis()
             )
 
             result.add(categoriesEntity)
-            Log.e(TAG, "${categoriesEntity}")
 
             // 递归处理子分类
             categories.categoryList.forEach { childCategory ->

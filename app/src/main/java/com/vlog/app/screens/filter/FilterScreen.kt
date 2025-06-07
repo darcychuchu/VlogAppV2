@@ -33,11 +33,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.vlog.app.R
 import com.vlog.app.screens.components.CommonTopBar
@@ -45,7 +43,6 @@ import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
 import com.vlog.app.screens.components.VideoCardCompact
 import com.vlog.app.navigation.NavigationRoutes
-import com.vlog.app.screens.favorites.FavoriteViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,7 +131,7 @@ fun FilterScreen(
                                 VideoCardCompact(
                                     video = video,
                                     onClick = {
-                                        navController.navigate("video/${video.id}")
+                                        navController.navigate("file_detail/${video.id}")
                                     }
                                 )
                             }

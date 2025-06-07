@@ -16,6 +16,7 @@ import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.stories.StoriesService
 import com.vlog.app.data.users.UserService
 import com.vlog.app.data.videos.VideoDao
+import com.vlog.app.data.videos.GatherItemDao
 import com.vlog.app.data.videos.VideoService
 import com.vlog.app.data.versions.AppUpdateService
 import com.vlog.app.data.versions.AppUpdateRepository
@@ -104,6 +105,13 @@ object NetworkModule {
     fun provideVideoDao(database: VlogDatabase): VideoDao {
         return database.videoDao()
     }
+
+    @Provides
+    fun provideGatherItemDao(database: VlogDatabase): GatherItemDao {
+        return database.gatherItemDao()
+    }
+
+
 
 
     @Provides

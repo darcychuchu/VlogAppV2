@@ -90,8 +90,7 @@ class VideoViewModel @Inject constructor(
                 year = currentFilter.selectedYear,
                 sort = currentFilter.selectedSort,
                 page = page,
-                pageSize = 24,
-                forceRefresh = forceRefresh
+                pageSize = 24
             )
                 .onSuccess { paginatedResponse ->
                     val newVideos = paginatedResponse.items ?: emptyList()

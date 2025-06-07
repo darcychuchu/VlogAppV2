@@ -16,6 +16,5 @@ data class CategoriesEntity(
     var modelId: String? = null,
     var modelTyped: Int? = null,
     var title: String,
-    val childrenIds: String = "",
     val lastUpdated: Long = System.currentTimeMillis()
 )

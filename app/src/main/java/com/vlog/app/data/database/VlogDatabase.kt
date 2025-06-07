@@ -12,6 +12,8 @@ import com.vlog.app.data.histories.search.SearchHistoryDao
 import com.vlog.app.data.histories.search.SearchHistoryEntity
 import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.videos.GatherItemDao
+import com.vlog.app.data.videos.GatherItemEntity
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoEntity
 
@@ -21,7 +23,8 @@ import com.vlog.app.data.videos.VideoEntity
         CategoriesEntity::class,
         FavoritesEntity::class,
         WatchHistoryEntity::class,
-        SearchHistoryEntity::class
+        SearchHistoryEntity::class,
+        GatherItemEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -33,6 +36,7 @@ abstract class VlogDatabase : RoomDatabase() {
     abstract fun favoritesDao(): FavoritesDao
     abstract fun watchHistoryDao(): WatchHistoryDao
     abstract fun searchHistoryDao(): SearchHistoryDao
+    abstract fun gatherItemDao(): GatherItemDao
 
     companion object {
         @Volatile

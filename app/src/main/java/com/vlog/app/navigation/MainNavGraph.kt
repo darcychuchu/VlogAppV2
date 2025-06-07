@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.vlog.app.screens.favorites.FavoritesScreen
+import com.vlog.app.screens.filter.FilterDetailScreen
 import com.vlog.app.screens.filter.FilterScreen
 import com.vlog.app.screens.home.HomeScreen
 import com.vlog.app.screens.profile.AppUpdateScreen
@@ -106,6 +107,21 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
  */
 @OptIn(UnstableApi::class)
 private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController) {
+
+    composable(
+        route = "${NavigationRoutes.FullScreenRoute.FilterDetail.route}?videoId={videoId}",
+        arguments = listOf(
+            navArgument("videoId") { type = NavType.StringType }
+        )
+    ) { backStackEntry ->
+        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+        FilterDetailScreen(
+            videoId = videoId,
+            onNavigateBack = {
+                navController.popBackStack()
+            }
+        )
+    }
 
     composable(
         route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}",

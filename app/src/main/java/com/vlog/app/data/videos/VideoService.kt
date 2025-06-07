@@ -34,4 +34,10 @@ interface VideoService {
         @Path("videoId") videoId: String,
         @Query("token") token: String? = null
     ): ApiResponse<Videos>
+
+    @GET(Constants.ENDPOINT_VIDEO_GATHER)
+    suspend fun getGatherList(
+        @Path("id") videoId: String,
+        @Query("gather_version") gatherVersion: Int
+    ): ApiResponse<List<GatherItem>>
 }
