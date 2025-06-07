@@ -39,12 +39,36 @@ class FilterDetailViewModel @Inject constructor(
     private val videoId: String = savedStateHandle.get<String>("videoId") ?: ""
 
     init {
-        if (videoId.isNotBlank()) {
-            observeLocalVideoDetail()
-            checkAndFetchRemoteVideoDetail()
-            fetchGatherList()
-        } else {
+        if (videoId.isBlank()) {
             _uiState.update { it.copy(error = "Video ID is missing", isLoading = false) }
+            return
+        }
+        loadInitialVideoDetailThenObserve()
+        fetchGatherList()
+    }
+
+    private fun loadInitialVideoDetailThenObserve() {
+        viewModelScope.launch {
+            val localVideoInitial = videoRepository.getLocalVideoDetail(videoId).firstOrNull()
+            val needsFetch = localVideoInitial == null || (System.currentTimeMillis() - (localVideoInitial.lastRefreshed ?: 0L)) >= (24 * 60 * 60 * 1000L)
+
+            if (needsFetch) {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
+                    _uiState.update { currentState ->
+                        when (resource) {
+                            is Resource.Loading -> currentState.copy(isLoading = true)
+                            is Resource.Success -> currentState.copy(isLoading = false, video = resource.data ?: currentState.video, error = null)
+                            is Resource.Error -> currentState.copy(isLoading = false, error = resource.message ?: "An unknown error occurred")
+                        }
+                    }
+                }
+                // After the flow from fetchAndCacheVideoDetail completes
+                observeLocalVideoDetailContinuously()
+            } else {
+                _uiState.update { it.copy(isLoading = false, video = localVideoInitial, error = null) }
+                observeLocalVideoDetailContinuously()
+            }
         }
     }
 
@@ -74,7 +98,7 @@ class FilterDetailViewModel @Inject constructor(
         }
     }
 
-    private fun observeLocalVideoDetail() {
+    private fun observeLocalVideoDetailContinuously() {
         viewModelScope.launch {
             videoRepository.getLocalVideoDetail(videoId).collectLatest { localVideo ->
                 _uiState.update { currentState ->
@@ -91,55 +115,14 @@ class FilterDetailViewModel @Inject constructor(
         }
     }
 
-
-    ///**************************************************
-    private fun checkAndFetchRemoteVideoDetail() {
-        viewModelScope.launch {
-            // Make decision based on the first emission from local data
-            val localVideoInitial = videoRepository.getLocalVideoDetail(videoId).firstOrNull()
-
-            val needsFetch = if (localVideoInitial == null) {
-                true
-            } else {
-                val lastRefreshed = localVideoInitial.lastRefreshed ?: 0L
-                (System.currentTimeMillis() - lastRefreshed) >= (24 * 60 * 60 * 1000L) // 24-hour check
-            }
-
-            if (needsFetch) {
-                _uiState.update { it.copy(isLoading = true, error = null) } // Show loading before fetch
-                videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
-                    _uiState.update { currentState ->
-                        when (resource) {
-                            is Resource.Loading -> currentState.copy(isLoading = true) // Can keep it true
-                            is Resource.Success -> currentState.copy(
-                                isLoading = false,
-                                video = resource.data ?: currentState.video, // Update with fresh data
-                                error = null
-                            )
-                            is Resource.Error -> currentState.copy(
-                                isLoading = false,
-                                error = resource.message ?: "An unknown error occurred"
-                            )
-                        }
-                    }
-                }
-            } else {
-                // If no fetch is needed, the local observer `observeLocalVideoDetail`
-                // should have already populated the UI. We just ensure loading is false,
-                // and explicitly set the video data from our initial check.
-                 _uiState.update { it.copy(isLoading = false, video = localVideoInitial) }
-            }
-        }
-    }
-
     fun retryFetch() {
         if (videoId.isNotBlank()) {
-            // Force fetch by ignoring timestamp check, directly call repository's remote fetch
-             viewModelScope.launch {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null, gatherListError = null) } // Reset errors
                 videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
                     _uiState.update { currentState ->
                         when (resource) {
-                            is Resource.Loading -> currentState.copy(isLoading = true, error = null)
+                            is Resource.Loading -> currentState.copy(isLoading = true)
                             is Resource.Success -> currentState.copy(
                                 isLoading = false,
                                 video = resource.data ?: currentState.video,
@@ -152,8 +135,9 @@ class FilterDetailViewModel @Inject constructor(
                         }
                     }
                 }
+                observeLocalVideoDetailContinuously() // Restart continuous observation
             }
-            fetchGatherList()
+            fetchGatherList() // Re-fetch gather list as well
         }
     }
 

@@ -125,10 +125,15 @@ class VideoRepository @Inject constructor(
                 videoEntity.lastRefreshed = System.currentTimeMillis()
                 try {
                     videoDao.insertVideo(videoEntity) // This is a suspend fun
-                    // After inserting, we might want to emit the entity from the DB via a new fetch
-                    // or trust that the inserted entity is what we want to show immediately.
-                    // For simplicity here, emitting the transformed entity directly.
-                    emit(Resource.Success(videoEntity))
+
+                    // If insertVideo was successful, now re-read and emit
+                    val reReadEntity = videoDao.getVideoByIdFlow(videoEntity.id).firstOrNull()
+                    if (reReadEntity != null) {
+                        emit(Resource.Success(reReadEntity))
+                    } else {
+                        // This is problematic: saved but couldn't re-read immediately
+                        emit(Resource.Error("Video detail saved but failed to re-read from DB. ID: ${videoEntity.id}", null))
+                    }
                 } catch (dbException: Exception) {
                     emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
                 }
@@ -147,7 +152,7 @@ class VideoRepository @Inject constructor(
         val gatherListAdapter = moshi.adapter<List<GatherList>>(listType)
 
         try {
-            val cachedEntity = gatherItemDao.getGatherItemSync(videoId)
+            val cachedEntity = gatherItemDao.getGatherItemForVideo(videoId).firstOrNull()
             val currentTime = System.currentTimeMillis()
 
             if (cachedEntity != null) {
@@ -187,7 +192,22 @@ class VideoRepository @Inject constructor(
                             lastUpdated = System.currentTimeMillis()
                         )
                         gatherItemDao.insertItem(newEntity)
-                        emit(Resource.Success(actualEpisodeList))
+                        // Re-read from DB and emit
+                        val savedEntity = gatherItemDao.getGatherItemForVideo(videoId).firstOrNull()
+                        if (savedEntity != null && !savedEntity.gatherListJson.isNullOrBlank()) {
+                            try {
+                                val deserializedListFromDb: List<GatherList>? = gatherListAdapter.fromJson(savedEntity.gatherListJson!!)
+                                if (deserializedListFromDb != null) {
+                                    emit(Resource.Success(deserializedListFromDb))
+                                } else {
+                                    emit(Resource.Error("Failed to deserialize newly saved gather list from DB", null))
+                                }
+                            } catch (e: Exception) {
+                                emit(Resource.Error("Error parsing newly saved gather list from DB: ${e.message}", null))
+                            }
+                        } else {
+                            emit(Resource.Error("Newly saved gather list not found or is blank in DB", null))
+                        }
                     } else { // Server returned item but no actual episode list
                         emit(Resource.Error("No episode list in API response", null))
                     }
