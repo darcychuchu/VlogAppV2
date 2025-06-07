@@ -1,10 +1,8 @@
-package com.vlog.app.screens.videos
+package com.vlog.app.screens.filter
 
 import android.annotation.SuppressLint
-import android.content.pm.ActivityInfo
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +35,7 @@ import kotlinx.coroutines.delay
 fun VideoPlayerView(
     playUrl: String?,
     isFullscreen: Boolean,
+    isOrientationFullscreen: Boolean,
     onFullscreenToggle: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
@@ -172,7 +172,8 @@ fun VideoPlayerView(
                 currentGatherTitle = currentGatherTitle,
                 currentPlayTitle = currentPlayTitle,
                 onOrientationToggle = onOrientationToggle,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                isOrientationFullscreen = isOrientationFullscreen
             )
         }
         
@@ -193,6 +194,7 @@ fun VideoPlayerControls(
     duration: Long,
     bufferedPosition: Long,
     isFullscreen: Boolean,
+    isOrientationFullscreen: Boolean,
     onPlayPause: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onPrevious: () -> Unit,
@@ -342,7 +344,7 @@ fun VideoPlayerControls(
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
                 .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                    Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
                             Color.Black.copy(alpha = 0.7f)
@@ -377,27 +379,31 @@ fun VideoPlayerControls(
                 
                 // 右侧按钮组
                 Row {
-                    // 横竖屏切换按钮
-                    IconButton(
-                        onClick = onOrientationToggle
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ScreenRotation,
-                            contentDescription = "横竖屏切换",
-                            tint = Color.White
-                        )
+                    if (isFullscreen == isOrientationFullscreen) {
+                        // 横竖屏切换按钮
+                        IconButton(
+                            onClick = { onOrientationToggle() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ScreenRotation,
+                                contentDescription = "横竖屏切换",
+                                tint = Color.White
+                            )
+                        }
                     }
-                    
-                    // 全屏按钮
-                    IconButton(
-                        onClick = onFullscreenToggle
-                    ) {
-                        Icon(
-                            imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                            contentDescription = if (isFullscreen) "退出全屏" else "全屏",
-                            tint = Color.White
-                        )
+                    if (!isOrientationFullscreen) {
+                        // 全屏按钮
+                        IconButton(
+                            onClick = { onFullscreenToggle() }
+                        ) {
+                            Icon(
+                                imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                                contentDescription = if (isFullscreen) "退出全屏" else "全屏",
+                                tint = Color.White
+                            )
+                        }
                     }
+
                 }
             }
         }

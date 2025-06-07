@@ -41,6 +41,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.vlog.app.data.categories.CategoriesEntity
 import com.vlog.app.data.videos.Videos
+import com.vlog.app.screens.components.VideoItem
 import com.vlog.app.screens.favorites.FavoriteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -221,7 +222,7 @@ fun FilterSection(
         // 分类筛选
         FilterRow<String?>(
             items = buildList {
-                addAll(categories.map { FilterItem(it.title ?: "未知", it.id?.toString()) })
+                addAll(categories.map { FilterItem(it.title, it.id.toString()) })
             },
             selectedValue = filterState.selectedCategoryId,
             onItemSelected = { categoryId ->
@@ -433,185 +434,7 @@ fun VideoGridSection(
     }
 }
 
-// 视频项组件
-@Composable
-fun VideoItem(
-    video: Videos,
-    favoriteViewModel: FavoriteViewModel,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val favoriteUiState by favoriteViewModel.uiState.collectAsState()
-    val favorites by favoriteViewModel.favorites.collectAsState()
-    // 实时检查订阅状态，基于最新的订阅列表数据
-    val isFavorite by favoriteViewModel.isVideoFavoriteFlow(video.id ?: "").collectAsState(initial = false)
-    
-    var showMessage by remember { mutableStateOf<String?>(null) }
-    
-    // 显示操作结果消息
-    LaunchedEffect(favoriteUiState.lastUpdateMessage) {
-        favoriteUiState.lastUpdateMessage?.let { message ->
-            showMessage = message
-            favoriteViewModel.clearUpdateMessage()
-        }
-    }
-    
-    LaunchedEffect(favoriteUiState.error) {
-        favoriteUiState.error?.let { error ->
-            showMessage = error
-            favoriteViewModel.clearError()
-        }
-    }
-    
-    Column(
-        modifier = modifier
-            .clickable { onClick() }
-    ) {
-        // 视频封面
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(3f / 4f)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(video.coverUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = video.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            
-            // 评分 - 右上角
-            video.score?.takeIf { it.isNotBlank() }?.let { score ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .background(
-                            Color.Black.copy(alpha = 0.7f),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = score,
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-            
-            // 备注 - 左下角
-            video.remarks?.takeIf { it.isNotBlank() }?.let { remarks ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(4.dp)
-                        .background(
-                            Color.Black.copy(alpha = 0.7f),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = remarks,
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            
-            // 订阅按钮 - 右下角
-            IconButton(
-                onClick = {
-                    video.id?.let { videoId ->
-                        if (isFavorite) {
-                            favoriteViewModel.removeFromFavorites(videoId) { success, message ->
-                                showMessage = message ?: if (success) "取消订阅成功" else "取消订阅失败"
-                            }
-                        } else {
-                            favoriteViewModel.addToFavorites(videoId) { success, message ->
-                                showMessage = message ?: if (success) "订阅成功" else "订阅失败"
-                            }
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(4.dp)
-                    .size(24.dp)
-                    .background(
-                        Color.Black.copy(alpha = 0.7f),
-                        RoundedCornerShape(12.dp)
-                    )
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = if (isFavorite) "取消订阅" else "订阅",
-                    tint = if (isFavorite) Color.Red else Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // 标题
-        Text(
-            text = video.title ?: "未知标题",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 16.sp
-        )
-        
-        // 标签
-        video.tags?.takeIf { it.isNotBlank() }?.let { tags ->
-            Text(
-                text = tags,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-        
-        // 发布时间
-        video.publishedAt?.takeIf { it.isNotBlank() }?.let { publishedAt ->
-            Text(
-                text = publishedAt,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-        
-        // 显示操作结果消息
-        showMessage?.let { message ->
-            LaunchedEffect(message) {
-                kotlinx.coroutines.delay(2000)
-                showMessage = null
-            }
-            Text(
-                text = message,
-                fontSize = 9.sp,
-                color = if (message.contains("成功")) Color.Green else MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 2.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
+
 
 // 筛选项数据类
 data class FilterItem<T>(

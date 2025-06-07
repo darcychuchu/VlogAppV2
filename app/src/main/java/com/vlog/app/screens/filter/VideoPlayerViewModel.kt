@@ -1,4 +1,4 @@
-package com.vlog.app.screens.videos
+package com.vlog.app.screens.filter
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -30,6 +30,7 @@ data class VideoPlayerUiState(
     var remarks: String? = null,
     var coverUrl: String? = null,
     val watchHistory: WatchHistoryEntity? = null, // 观看历史
+    val isOrientationFullscreen: Boolean = false,
 )
 
 data class PlaylistState(
@@ -235,6 +236,16 @@ class VideoPlayerViewModel @Inject constructor(
             )
         }
     }
+
+    fun toggleOrientationFullscreen() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isOrientationFullscreen = !_uiState.value.isOrientationFullscreen
+            )
+        }
+    }
+
+
     
     fun setPlaybackSpeed(speed: Float) {
         viewModelScope.launch {

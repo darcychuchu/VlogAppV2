@@ -10,11 +10,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.screens.favorites.FavoriteViewModel
+import com.vlog.app.screens.filter.VideoPlayerView
+import com.vlog.app.screens.filter.VideoPlayerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,59 +79,55 @@ fun VideoDetailScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("视频详情") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
-                        )
-                    }
-                },
-                actions = {
-                    // 播放列表按钮
-                    IconButton(
-                        onClick = { showPlaylistDialog = true }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        if (uiState.isLoading) {
+            // 加载状态
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            videoDetail?.let { detail ->
+                if (playerUiState.isFullscreen) {
+                    // 全屏模式：只显示播放器
+                    VideoPlayerView(
+                        playUrl = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.playUrl,
+                        isFullscreen = playerUiState.isFullscreen,
+                        onFullscreenToggle = { playerViewModel.toggleFullscreen() },
+                        onPrevious = { playerViewModel.playPrevious() },
+                        onNext = { playerViewModel.playNext() },
+                        hasPrevious = playerViewModel.hasPrevious(),
+                        hasNext = playerViewModel.hasNext(),
+                        currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
+                        currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
+                        onOrientationToggle = {
+                            val activity = context as? Activity
+                            activity?.let {
+                                it.requestedOrientation =
+                                    if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                    } else {
+                                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                                    }
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                        isOrientationFullscreen = playerUiState.isOrientationFullscreen
+                    )
+                } else {
+                    // 正常模式：显示所有内容
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = "播放列表"
-                        )
-                    }
-                    
-                    // 刷新按钮
-                    IconButton(
-                        onClick = { viewModel.loadVideoDetail(videoId) }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "刷新"
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (uiState.isLoading) {
-                // 加载状态
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                videoDetail?.let { detail ->
-                    if (playerUiState.isFullscreen) {
-                        // 全屏模式：只显示播放器
+                        // 播放器区域
                         VideoPlayerView(
                             playUrl = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.playUrl,
                             isFullscreen = playerUiState.isFullscreen,
@@ -146,110 +141,80 @@ fun VideoDetailScreen(
                             onOrientationToggle = {
                                 val activity = context as? Activity
                                 activity?.let {
-                                    it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                                    } else {
-                                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        // 正常模式：显示所有内容
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(16.dp)
-                        ) {
-                            // 播放器区域
-                            VideoPlayerView(
-                                playUrl = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.playUrl,
-                                isFullscreen = playerUiState.isFullscreen,
-                                onFullscreenToggle = { playerViewModel.toggleFullscreen() },
-                                onPrevious = { playerViewModel.playPrevious() },
-                                onNext = { playerViewModel.playNext() },
-                                hasPrevious = playerViewModel.hasPrevious(),
-                                hasNext = playerViewModel.hasNext(),
-                                currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
-                                currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
-                                onOrientationToggle = {
-                                    val activity = context as? Activity
-                                    activity?.let {
-                                        it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                                    it.requestedOrientation =
+                                        if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
                                             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                                         } else {
                                             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                                         }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            isOrientationFullscreen = playerUiState.isOrientationFullscreen
+                        )
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                            // 视频标题
-                            Text(
-                                text = detail.title ?: "未知标题",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
+                        // 视频标题
+                        Text(
+                            text = detail.title ?: "未知标题",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                            // 视频信息
-                            VideoInfoSection(
-                                detail = detail,
-                                favoriteViewModel = favoriteViewModel
-                            )
+                        // 视频信息
+                        VideoInfoSection(
+                            detail = detail,
+                            favoriteViewModel = favoriteViewModel
+                        )
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                            // 当前播放列表
-                            if (playlistState.currentPlayList.isNotEmpty()) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        // 当前播放列表
+                        if (playlistState.currentPlayList.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
                                 ) {
-                                    Column(
-                                        modifier = Modifier.padding(16.dp)
+                                    Text(
+                                        text = "选择集数 (${playlistState.currentPlayList.size} 集)",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text(
-                                            text = "选择集数 (${playlistState.currentPlayList.size} 集)",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                        )
-                                        
-                                        LazyRow(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            itemsIndexed(playlistState.currentPlayList) { index, playItem ->
-                                                Card(
-                                                    modifier = Modifier
-                                                        .clickable {
-                                                            playerViewModel.selectPlaySource(index)
-                                                        },
-                                                    colors = CardDefaults.cardColors(
-                                                        containerColor = if (index == playlistState.currentPlayIndex) {
-                                                            MaterialTheme.colorScheme.primary
-                                                        } else {
-                                                            MaterialTheme.colorScheme.surface
-                                                        }
-                                                    )
-                                                ) {
-                                                    Text(
-                                                        text = playItem.title ?: "第${index + 1}集",
-                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                        color = if (index == playlistState.currentPlayIndex) {
-                                                            MaterialTheme.colorScheme.onPrimary
-                                                        } else {
-                                                            MaterialTheme.colorScheme.onSurface
-                                                        },
-                                                        style = MaterialTheme.typography.bodyMedium
-                                                    )
-                                                }
+                                        itemsIndexed(playlistState.currentPlayList) { index, playItem ->
+                                            Card(
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        playerViewModel.selectPlaySource(index)
+                                                    },
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = if (index == playlistState.currentPlayIndex) {
+                                                        MaterialTheme.colorScheme.primary
+                                                    } else {
+                                                        MaterialTheme.colorScheme.surface
+                                                    }
+                                                )
+                                            ) {
+                                                Text(
+                                                    text = playItem.title ?: "第${index + 1}集",
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    color = if (index == playlistState.currentPlayIndex) {
+                                                        MaterialTheme.colorScheme.onPrimary
+                                                    } else {
+                                                        MaterialTheme.colorScheme.onSurface
+                                                    },
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
                                             }
                                         }
                                     }
@@ -261,8 +226,6 @@ fun VideoDetailScreen(
             }
         }
     }
-
-
     
     // 播放列表对话框
     if (showPlaylistDialog) {

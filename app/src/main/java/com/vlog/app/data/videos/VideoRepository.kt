@@ -1,5 +1,6 @@
 package com.vlog.app.data.videos
 
+import android.annotation.SuppressLint
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -28,6 +29,7 @@ class VideoRepository @Inject constructor(
     }
     
     // 获取筛选后的视频列表******************************************************************
+    @SuppressLint("SuspiciousIndentation")
     suspend fun getFilteredVideos(
         typed: Int = 0,
         categoryId: String? = null,

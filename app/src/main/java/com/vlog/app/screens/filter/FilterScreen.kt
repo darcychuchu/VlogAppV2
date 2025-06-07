@@ -40,8 +40,8 @@ import com.vlog.app.R
 import com.vlog.app.screens.components.CommonTopBar
 import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
-import com.vlog.app.screens.components.VideoCardCompact
 import com.vlog.app.navigation.NavigationRoutes
+import com.vlog.app.screens.components.VideoItem
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +65,6 @@ fun FilterScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        //contentWindowInsets = WindowInsets.statusBars,
         topBar = {
             CommonTopBar(
                 title = stringResource(R.string.videos),
@@ -74,7 +73,6 @@ fun FilterScreen(
             )
         }
     ) { paddingValues ->
-        // 暂时移除下拉刷新功能
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -118,6 +116,7 @@ fun FilterScreen(
                         }
                     }
                     else -> {
+
                         // 视频列表
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(3),
@@ -127,11 +126,10 @@ fun FilterScreen(
                             modifier = Modifier.height((uiState.videos.size / 3 * 160).dp)
                         ) {
                             items(uiState.videos) { video ->
-                                VideoCardCompact(
+
+                                VideoItem(
                                     video = video,
-                                    onClick = {
-                                        navController.navigate("filter_detail/${video.id}")
-                                    }
+                                    onClick = { navController.navigate("filter_detail/${video.id}") }
                                 )
                             }
 
@@ -144,9 +142,7 @@ fun FilterScreen(
                                             .fillMaxWidth()
                                             .padding(16.dp)
                                     )
-
-                                    // 如果不是正在加载，且可以加载更多，则触发加载更多
-                                    if (!uiState.isLoadingMore && uiState.canLoadMore) {
+                                    if (!uiState.isLoadingMore) {
                                         viewModel.loadMoreVideos()
                                     }
                                 }
@@ -155,7 +151,6 @@ fun FilterScreen(
                     }
                 }
             }
-            // 暂时移除下拉刷新指示器
         }
     }
 }

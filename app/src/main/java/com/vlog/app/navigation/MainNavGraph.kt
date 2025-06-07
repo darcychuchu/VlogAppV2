@@ -10,8 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.vlog.app.screens.favorites.FavoritesScreen
-import com.vlog.app.screens.filter.FilterDetailScreen
 import com.vlog.app.screens.filter.FilterScreen
+import com.vlog.app.screens.filter.FilterVideoDetailScreen
 import com.vlog.app.screens.home.HomeScreen
 import com.vlog.app.screens.profile.AppUpdateScreen
 import com.vlog.app.screens.profile.WatchHistoryScreen
@@ -21,7 +21,6 @@ import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserHomeScreen
 import com.vlog.app.screens.videos.VideoDetailScreen
-import com.vlog.app.screens.videos.VideosScreen
 import com.vlog.app.ui.screens.publish.PhotoPublishScreen
 
 /**
@@ -107,6 +106,19 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
  */
 @OptIn(UnstableApi::class)
 private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController) {
+
+    composable(
+        route = "${NavigationRoutes.FullScreenRoute.FilterDetail.route}?videoId={videoId}",
+        arguments = listOf(
+            navArgument("videoId") { type = NavType.StringType }
+        )
+    ) { backStackEntry ->
+        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+        FilterVideoDetailScreen(
+            videoId = videoId,
+            navController = navController
+        )
+    }
 
     composable(
         route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}",
@@ -262,21 +274,6 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
                 navController.navigate(NavigationRoutes.MainRoute.Home.route) {
                     popUpTo(NavigationRoutes.OtherRoute.Register.route) { inclusive = true }
                 }
-            }
-        )
-    }
-
-    composable(
-        route = "${NavigationRoutes.OtherRoute.FilterDetail.route}?videoId={videoId}",
-        arguments = listOf(
-            navArgument("videoId") { type = NavType.StringType }
-        )
-    ) { backStackEntry ->
-        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
-        FilterDetailScreen(
-            videoId = videoId,
-            onNavigateBack = {
-                navController.popBackStack()
             }
         )
     }

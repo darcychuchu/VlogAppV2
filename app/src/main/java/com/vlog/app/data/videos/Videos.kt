@@ -26,4 +26,17 @@ data class Videos(
     val episodeCount: Int? = null,
 
     var gatherList: MutableList<GatherList>? = mutableListOf(),
-)
+) {
+
+    fun getFirstPlayUrl(): String? {
+        return gatherList?.firstOrNull()?.playList?.firstOrNull()?.playUrl
+    }
+
+    fun getPlayListByGatherId(gatherId: String): List<PlayList> {
+        return gatherList?.find { it.gatherId == gatherId }?.playList ?: emptyList()
+    }
+
+    fun getGather(gatherId: String): GatherList? {
+        return gatherList?.find { it.gatherId == gatherId }
+    }
+}

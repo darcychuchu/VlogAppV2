@@ -37,6 +37,10 @@ object NavigationRoutes {
                 "videos/player/$videoId?url=${url.encodeUrl()}&gatherId=${gatherId.encodeUrl()}&episodeTitle=${episodeTitle.encodeUrl()}&lastPlayedPosition=$lastPlayedPosition&episodeIndex=$episodeIndex"
         }
 
+        object FilterDetail : FullScreenRoute("filter_detail/{videoId}") {
+            fun createRoute(videoId: String) = "filter_detail/$videoId"
+        }
+
     }
 
     // URL编码
@@ -67,11 +71,6 @@ object NavigationRoutes {
         // 认证相关页面
         object Login : OtherRoute("login")
         object Register : OtherRoute("register")
-
-
-        object FilterDetail : OtherRoute("filter_detail/{videoId}") {
-            fun createRoute(videoId: String) = "filter_detail/$videoId"
-        }
     }
 
     // 底部导航项
@@ -86,6 +85,6 @@ object NavigationRoutes {
     // 判断路由是否为全屏路由
     fun isFullScreenRoute(route: String?): Boolean {
         if (route == null) return false
-        return route.startsWith("video/") || route.startsWith("videos/player/")
+        return route.startsWith("filter_detail/") || route.startsWith("video_player/") || route.startsWith("video_detail/")
     }
 }
