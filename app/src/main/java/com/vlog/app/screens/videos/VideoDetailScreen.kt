@@ -105,19 +105,9 @@ fun VideoDetailScreen(
                         hasNext = playerViewModel.hasNext(),
                         currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
                         currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
-                        onOrientationToggle = {
-                            val activity = context as? Activity
-                            activity?.let {
-                                it.requestedOrientation =
-                                    if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                                    } else {
-                                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                                    }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                        isOrientationFullscreen = playerUiState.isOrientationFullscreen
+                            // onOrientationToggle removed
+                            modifier = Modifier.fillMaxSize()
+                            // isOrientationFullscreen = playerUiState.isOrientationFullscreen // Removed
                     )
                 } else {
                     // 正常模式：显示所有内容
@@ -129,7 +119,7 @@ fun VideoDetailScreen(
                     ) {
                         // 播放器区域
                         VideoPlayerView(
-                            playUrl = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.playUrl,
+                            playerViewModel = playerViewModel,
                             isFullscreen = playerUiState.isFullscreen,
                             onFullscreenToggle = { playerViewModel.toggleFullscreen() },
                             onPrevious = { playerViewModel.playPrevious() },
@@ -138,19 +128,9 @@ fun VideoDetailScreen(
                             hasNext = playerViewModel.hasNext(),
                             currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
                             currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
-                            onOrientationToggle = {
-                                val activity = context as? Activity
-                                activity?.let {
-                                    it.requestedOrientation =
-                                        if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                                            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                                        } else {
-                                            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                                        }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            isOrientationFullscreen = playerUiState.isOrientationFullscreen
+                                // onOrientationToggle removed
+                                modifier = Modifier.fillMaxWidth()
+                                // isOrientationFullscreen = playerUiState.isOrientationFullscreen // Removed
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
