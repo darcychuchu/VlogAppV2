@@ -11,7 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.vlog.app.screens.favorites.FavoritesScreen
 import com.vlog.app.screens.filter.FilterScreen
-import com.vlog.app.screens.filter.FilterVideoDetailScreen
+import com.vlog.app.screens.filter.VideoDetailScreen
 import com.vlog.app.screens.home.HomeScreen
 import com.vlog.app.screens.profile.AppUpdateScreen
 import com.vlog.app.screens.profile.WatchHistoryScreen
@@ -20,7 +20,6 @@ import com.vlog.app.screens.search.SearchScreen
 import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserHomeScreen
-import com.vlog.app.screens.videos.VideoDetailScreen
 import com.vlog.app.ui.screens.publish.PhotoPublishScreen
 
 /**
@@ -114,91 +113,11 @@ private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController
         )
     ) { backStackEntry ->
         val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
-        FilterVideoDetailScreen(
+        VideoDetailScreen(
             videoId = videoId,
             navController = navController
         )
     }
-
-    composable(
-        route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}",
-        arguments = listOf(
-            navArgument("videoId") { type = NavType.StringType }
-        )
-    ) { backStackEntry ->
-        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
-        VideoDetailScreen(
-            videoId = videoId,
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
-    }
-
-    // 视频播放器页面
-    composable(
-        route = NavigationRoutes.FullScreenRoute.VideoPlayer.route,
-        arguments = listOf(
-            navArgument("videoId") {
-                type = NavType.StringType
-                nullable = false
-            },
-            navArgument("url") {
-                type = NavType.StringType
-                nullable = false
-                defaultValue = ""
-            },
-            navArgument("gatherId") {
-                type = NavType.StringType
-                nullable = false
-                defaultValue = ""
-            },
-            navArgument("episodeTitle") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = ""
-            },
-            navArgument("lastPlayedPosition") {
-                type = NavType.LongType
-                defaultValue = 0L
-            },
-            navArgument("episodeIndex") {
-                type = NavType.IntType
-                defaultValue = 0
-            }
-
-
-        )
-    ) { backStackEntry ->
-        val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
-        val url = backStackEntry.arguments?.getString("url")
-        val gatherId = backStackEntry.arguments?.getString("gatherId")
-        val episodeTitle = backStackEntry.arguments?.getString("episodeTitle")
-        val lastPlayedPosition = backStackEntry.arguments?.getLong("lastPlayedPosition") ?: 0L
-        val episodeIndex = backStackEntry.arguments?.getInt("episodeIndex") ?: 0
-
-        // 设置为全屏导航
-        NavigationManager.setNavigationType(NavigationType.FULLSCREEN)
-
-        // 解码URL
-        val decodedUrl = java.net.URLDecoder.decode(url, "UTF-8")
-        val decodedTitle = java.net.URLDecoder.decode(episodeTitle, "UTF-8")
-
-        VideoDetailScreen(
-            videoId = videoId,
-            gatherId = gatherId,
-            playerUrl = decodedUrl,
-            episodeTitle = decodedTitle,
-            lastPlayedPosition = lastPlayedPosition,
-            episodeIndex = episodeIndex,
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
-    }
-
-
-
 
 }
 

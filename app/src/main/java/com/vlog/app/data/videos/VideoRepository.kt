@@ -150,7 +150,7 @@ class VideoRepository @Inject constructor(
             if (cachedEntity != null) {
                 if (currentTime - cachedEntity.lastUpdated < 3600000L) { // 1 hour in milliseconds
                     if (!cachedEntity.gatherListJson.isNullOrBlank()) {
-                        val gatherList: List<GatherList>? = gatherListAdapter.fromJson(cachedEntity.gatherListJson)
+                        val gatherList: List<GatherList>? = gatherListAdapter.fromJson(cachedEntity.gatherListJson?:"""{}""")
                         if (gatherList != null) {
                             emit(Resource.Success(gatherList))
                         }

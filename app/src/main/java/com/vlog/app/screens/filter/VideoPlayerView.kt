@@ -18,198 +18,163 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
+// ExoPlayer related imports are now primarily in ViewModel, PlayerView is for UI
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayerView(
-    playUrl: String?,
-    isFullscreen: Boolean,
-    isOrientationFullscreen: Boolean,
-    onFullscreenToggle: () -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    hasPrevious: Boolean,
-    hasNext: Boolean,
-    currentGatherTitle: String?,
-    currentPlayTitle: String?,
-    onOrientationToggle: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    playerViewModel: VideoPlayerViewModel = hiltViewModel(), // Obtain ViewModel
+    // Parameters below are mostly driven by ViewModel state or are direct pass-through for controls
+    // playUrl: String?, // ViewModel now manages the URL/MediaItem
+    isFullscreen: Boolean, // From ViewModel UI State
+    // isOrientationFullscreen: Boolean, // From ViewModel UI State - REMOVED
+    onFullscreenToggle: () -> Unit, // Calls ViewModel method
+    onPrevious: () -> Unit, // Calls ViewModel method
+    onNext: () -> Unit, // Calls ViewModel method
+    hasPrevious: Boolean, // From ViewModel
+    hasNext: Boolean, // From ViewModel
+    currentGatherTitle: String?, // From ViewModel PlaylistState
+    currentPlayTitle: String?, // From ViewModel PlaylistState
+    // onOrientationToggle: () -> Unit = {} // REMOVED
 ) {
-    val context = LocalContext.current
     var showControls by remember { mutableStateOf(true) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentPosition by remember { mutableStateOf(0L) }
-    var duration by remember { mutableStateOf(0L) }
-    var bufferedPosition by remember { mutableStateOf(0L) }
-    
-    // 创建ExoPlayer实例
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context)
-            .build()
-            .apply {
-                addListener(object : Player.Listener {
-                    override fun onIsPlayingChanged(playing: Boolean) {
-                        isPlaying = playing
-                    }
-                    
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        // 处理播放状态变化
-                    }
-                })
-            }
-    }
-    
-    // 更新播放URL
-    LaunchedEffect(playUrl) {
-        playUrl?.let { url ->
-            val mediaItem = MediaItem.fromUri(url)
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-            exoPlayer.playWhenReady = true
-        }
-    }
-    
-    // 定期更新播放进度
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentPosition = exoPlayer.currentPosition
-            duration = exoPlayer.duration.takeIf { it > 0 } ?: 0L
-            bufferedPosition = exoPlayer.bufferedPosition
-            delay(100)
-        }
-    }
-    
-    // 控制栏自动隐藏
-    LaunchedEffect(showControls) {
-        if (showControls && isPlaying) {
-            delay(3000)
+    val uiState by playerViewModel.uiState.collectAsState()
+    // val playlistState by playerViewModel.playlistState.collectAsState() // Already used in VideoDetailScreen
+
+    // Controls auto-hide logic
+    LaunchedEffect(showControls, uiState.isPlaying) {
+        if (showControls && uiState.isPlaying) {
+            delay(3000) // Hide controls after 3 seconds of playing
             showControls = false
         }
     }
-    
-    // 注意：移除了Activity方向设置，避免整个页面横屏
-    // 全屏模式现在只影响播放器组件本身的布局
-    
-    // 清理资源
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.release()
-        }
-    }
-    
+
+    // No local ExoPlayer instance, no LaunchedEffect for playUrl, no DisposableEffect for local player release.
+    // ViewModel handles ExoPlayer lifecycle and media item changes.
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (isFullscreen) {
-                    Modifier.fillMaxHeight()
-                } else {
-                    Modifier.aspectRatio(16f / 9f)
-                }
+                if (isFullscreen) Modifier.fillMaxHeight()
+                else Modifier.aspectRatio(16f / 9f)
             )
             .background(Color.Black)
-            .clickable {
-                showControls = !showControls
-            }
+            .clickable { showControls = !showControls }
     ) {
         // ExoPlayer视图
-        AndroidView(
-            factory = { context ->
-                PlayerView(context).apply {
-                    player = exoPlayer
-                    useController = false // 使用自定义控制器
-                    layoutParams = FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-        
-        // 自定义控制栏
-        if (showControls) {
-            VideoPlayerControls(
-                isPlaying = isPlaying,
-                currentPosition = currentPosition,
-                duration = duration,
-                bufferedPosition = bufferedPosition,
-                isFullscreen = isFullscreen,
-                onPlayPause = {
-                    if (isPlaying) {
-                        exoPlayer.pause()
-                    } else {
-                        exoPlayer.play()
+        // Make sure playerViewModel.exoPlayer is not null before passing to PlayerView
+        playerViewModel.exoPlayer?.let { exoPlayerInstance ->
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        player = exoPlayerInstance
+                        useController = false // We use custom controls
+                        layoutParams = FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
                     }
                 },
-                onSeekTo = { position ->
-                    exoPlayer.seekTo(position)
-                },
-                onPrevious = onPrevious,
-                onNext = onNext,
-                hasPrevious = hasPrevious,
-                hasNext = hasNext,
-                onFullscreenToggle = onFullscreenToggle,
-                onFastForward = {
-                    val newPosition = (currentPosition + 10000).coerceAtMost(duration)
-                    exoPlayer.seekTo(newPosition)
-                },
-                onFastRewind = {
-                    val newPosition = (currentPosition - 10000).coerceAtLeast(0)
-                    exoPlayer.seekTo(newPosition)
-                },
-                currentGatherTitle = currentGatherTitle,
-                currentPlayTitle = currentPlayTitle,
-                onOrientationToggle = onOrientationToggle,
-                modifier = Modifier.fillMaxSize(),
-                isOrientationFullscreen = isOrientationFullscreen
+                modifier = Modifier.fillMaxSize()
             )
         }
-        
-        // 加载指示器
-        if (duration == 0L && playUrl != null) {
+
+        // Custom control overlay
+        if (showControls) {
+            VideoPlayerControls(
+                isPlaying = uiState.isPlaying,
+                currentPosition = uiState.currentPosition,
+                duration = uiState.duration,
+                bufferedPosition = uiState.bufferedPosition,
+                isFullscreen = isFullscreen, // This is uiState.isFullscreen, passed as parameter
+                onPlayPause = {
+                    if (uiState.isPlaying) playerViewModel.pause()
+                    else playerViewModel.play()
+                },
+                onSeekTo = { position -> playerViewModel.seekTo(position) },
+                onPrevious = onPrevious, // Directly use the passed lambda which calls ViewModel
+                onNext = onNext,         // Directly use the passed lambda
+                hasPrevious = hasPrevious, // Directly use the passed boolean
+                hasNext = hasNext,         // Directly use the passed boolean
+                onFullscreenToggle = onFullscreenToggle, // Directly use the passed lambda
+                onFastForward = {
+                    val newPosition = (uiState.currentPosition + 10000).coerceAtMost(uiState.duration)
+                    playerViewModel.seekTo(newPosition)
+                },
+                onFastRewind = {
+                    val newPosition = (uiState.currentPosition - 10000).coerceAtLeast(0)
+                    playerViewModel.seekTo(newPosition)
+                },
+                currentGatherTitle = currentGatherTitle, // From ViewModel via parameter
+                currentPlayTitle = currentPlayTitle,   // From ViewModel via parameter
+                // onOrientationToggle = onOrientationToggle, // REMOVED
+                modifier = Modifier.fillMaxSize(),
+
+                // isOrientationFullscreen = isOrientationFullscreen // REMOVED
+            )
+        }
+
+        // Loading indicator, driven by ViewModel's state
+        if (uiState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
                 color = MaterialTheme.colorScheme.primary
             )
+        }
+
+        // Display error message if any
+        uiState.error?.let { error ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Error: $error \nTap to retry or select another video.",
+                    color = Color.White,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.clickable { playerViewModel.clearError() /* TODO: Add retry logic if needed */ }
+                )
+            }
         }
     }
 }
 
 @Composable
 fun VideoPlayerControls(
-    isPlaying: Boolean,
-    currentPosition: Long,
-    duration: Long,
-    bufferedPosition: Long,
-    isFullscreen: Boolean,
-    isOrientationFullscreen: Boolean,
-    onPlayPause: () -> Unit,
-    onSeekTo: (Long) -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    hasPrevious: Boolean,
-    hasNext: Boolean,
-    onFullscreenToggle: () -> Unit,
-    onFastForward: () -> Unit,
-    onFastRewind: () -> Unit,
-    currentGatherTitle: String?,
-    currentPlayTitle: String?,
-    onOrientationToggle: () -> Unit,
+    isPlaying: Boolean, // From ViewModel
+    currentPosition: Long, // From ViewModel
+    duration: Long, // From ViewModel
+    bufferedPosition: Long, // From ViewModel
+    isFullscreen: Boolean, // From ViewModel
+    // isOrientationFullscreen: Boolean, // REMOVED
+    onPlayPause: () -> Unit, // Calls ViewModel method
+    onSeekTo: (Long) -> Unit, // Calls ViewModel method
+    onPrevious: () -> Unit, // Calls ViewModel method
+    onNext: () -> Unit, // Calls ViewModel method
+    hasPrevious: Boolean, // From ViewModel
+    hasNext: Boolean, // From ViewModel
+    onFullscreenToggle: () -> Unit, // Calls ViewModel method
+    onFastForward: () -> Unit, // Calls ViewModel method
+    onFastRewind: () -> Unit, // Calls ViewModel method
+    currentGatherTitle: String?, // From ViewModel
+    currentPlayTitle: String?, // From ViewModel
+    // onOrientationToggle: () -> Unit, // REMOVED
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier) {
+    Box(modifier = modifier.background(Color.Transparent)) { // Ensure controls background is transparent
         // 顶部信息栏
         if (!isFullscreen) {
             Row(
@@ -379,31 +344,20 @@ fun VideoPlayerControls(
                 
                 // 右侧按钮组
                 Row {
-                    if (isFullscreen == isOrientationFullscreen) {
-                        // 横竖屏切换按钮
-                        IconButton(
-                            onClick = { onOrientationToggle() }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.ScreenRotation,
-                                contentDescription = "横竖屏切换",
-                                tint = Color.White
-                            )
-                        }
+                    // The ScreenRotation button is removed.
+                    // The Fullscreen button's visibility should solely depend on whether the player
+                    // is currently in its "fullscreen UI mode".
+                    // if (!isOrientationFullscreen) { // This condition is removed
+                    IconButton(
+                        onClick = { onFullscreenToggle() }
+                    ) {
+                        Icon(
+                            imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                            contentDescription = if (isFullscreen) "退出全屏" else "全屏",
+                            tint = Color.White
+                        )
                     }
-                    if (!isOrientationFullscreen) {
-                        // 全屏按钮
-                        IconButton(
-                            onClick = { onFullscreenToggle() }
-                        ) {
-                            Icon(
-                                imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                                contentDescription = if (isFullscreen) "退出全屏" else "全屏",
-                                tint = Color.White
-                            )
-                        }
-                    }
-
+                    // }
                 }
             }
         }

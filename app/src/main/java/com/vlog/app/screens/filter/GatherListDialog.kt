@@ -1,4 +1,4 @@
-package com.vlog.app.screens.videos
+package com.vlog.app.screens.filter
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -164,7 +164,7 @@ fun GatherItem(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = gather.gatherTitle,
+                        text = "${gather.gatherTitle} / ${gather.remarks}",
                         fontSize = 14.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         color = if (isSelected) {
@@ -175,7 +175,7 @@ fun GatherItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
+
                     if (gather.gatherTips.isNotBlank()) {
                         Text(
                             text = gather.gatherTips,

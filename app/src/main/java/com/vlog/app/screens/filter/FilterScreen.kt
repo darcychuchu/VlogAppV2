@@ -42,6 +42,7 @@ import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
 import com.vlog.app.navigation.NavigationRoutes
 import com.vlog.app.screens.components.VideoItem
+import com.vlog.app.screens.favorites.FavoriteViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +51,7 @@ fun FilterScreen(
     navController: NavController,
     typed: String? = null,
     viewModel: FilterViewModel = hiltViewModel(),
+    favoriteViewModel: FavoriteViewModel = hiltViewModel()
 ) {
     // 如果有 typed 参数，则设置默认分类
     LaunchedEffect(typed) {
@@ -129,7 +131,8 @@ fun FilterScreen(
 
                                 VideoItem(
                                     video = video,
-                                    onClick = { navController.navigate("filter_detail/${video.id}") }
+                                    onClick = { navController.navigate("filter_detail/${video.id}") },
+                                    favoriteViewModel = favoriteViewModel
                                 )
                             }
 
