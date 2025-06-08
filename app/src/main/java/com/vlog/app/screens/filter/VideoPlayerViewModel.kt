@@ -24,12 +24,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class DesiredScreenOrientation {
+    PORTRAIT,
+    LANDSCAPE,
+    SYSTEM_DEFAULT
+}
+
 data class VideoPlayerUiState(
     val isLoading: Boolean = false,
     val isPlaying: Boolean = false,
     // isFullscreen will now be the primary flag for the player UI to occupy the entire view bounds.
     // The actual device orientation (portrait/landscape) will be handled by the system.
     val isFullscreen: Boolean = false,
+    val desiredOrientation: DesiredScreenOrientation = DesiredScreenOrientation.SYSTEM_DEFAULT, // Target orientation for the activity
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
     val bufferedPosition: Long = 0L,
@@ -40,8 +47,6 @@ data class VideoPlayerUiState(
     var remarks: String? = null,
     var coverUrl: String? = null,
     val watchHistory: WatchHistoryEntity? = null, // 观看历史
-    // val isOrientationFullscreen: Boolean = false, // This state is being removed or re-evaluated.
-    // If needed, it would be derived from actual device configuration changes, not a direct toggle.
 )
 
 data class PlaylistState(
@@ -72,6 +77,8 @@ class VideoPlayerViewModel @Inject constructor(
     val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
 
     private var playbackStateJob: Job? = null
+    private var positionToRestore: Long = -1L
+    private var playWhenReadyToRestore: Boolean = false
 
     init {
         initializePlayerInternal()
@@ -79,11 +86,30 @@ class VideoPlayerViewModel @Inject constructor(
 
     private fun initializePlayerInternal() {
         if (_exoPlayer == null) {
-            _exoPlayer = ExoPlayer.Builder(context).build().apply {
-                addListener(playerListener)
-                playWhenReady = false // Default to not playing until user interaction
+            try {
+                val player = ExoPlayer.Builder(context).build()
+                if (player == null) {
+                    Log.e("VideoPlayerViewModel", "ExoPlayer initialization failed: Builder returned null.")
+                    _uiState.update { it.copy(isLoading = false, error = "Failed to initialize player (instance was null).") }
+                } else {
+                    _exoPlayer = player.apply {
+                        addListener(playerListener)
+                        playWhenReady = false // Default to not playing until user interaction
+                    }
+                    // If the above was successful, mark loading as done.
+                    // If addListener threw an exception, this part might be skipped if the catch block re-throws or returns.
+                    // For now, assume if we reach here, it's mostly fine.
+                    _uiState.update { it.copy(isLoading = false) }
+                }
+            } catch (e: Exception) {
+                Log.e("VideoPlayerViewModel", "Error during ExoPlayer initialization or listener setup: ${e.message}", e)
+                _uiState.update { it.copy(isLoading = false, error = "Failed to initialize player (listener setup error: ${e.message}).") }
+                // Ensure _exoPlayer is null if initialization failed partway
+                if (_exoPlayer != null) {
+                    _exoPlayer?.release()
+                    _exoPlayer = null
+                }
             }
-            _uiState.update { it.copy(isLoading = false) } // Initial load done
         }
     }
 
@@ -117,6 +143,7 @@ class VideoPlayerViewModel @Inject constructor(
             }
 
             currentPlayItem?.playUrl?.let { url ->
+                positionToRestore = 0L // Ensure initial item starts from beginning
                 setMediaItem(url, currentPlayItem.title)
             } ?: _uiState.update { it.copy(error = "No valid media URL found for initial item.") }
 
@@ -155,19 +182,26 @@ class VideoPlayerViewModel @Inject constructor(
 
     private fun releasePlayer() {
         playbackStateJob?.cancel()
-        _exoPlayer?.removeListener(playerListener)
-        _exoPlayer?.release()
-        _exoPlayer = null
-        // Reset relevant parts of UI state, keep playlist info
+        if (_exoPlayer != null) {
+            try {
+                positionToRestore = _exoPlayer!!.currentPosition // Save position before release
+                playWhenReadyToRestore = _exoPlayer!!.playWhenReady // CAPTURE playWhenReady STATE
+            } catch (e: Exception) {
+                Log.w("VideoPlayerViewModel", "Error getting state on release: ${e.message}")
+                // positionToRestore remains as is, or _uiState.value.currentPosition could be a fallback
+            }
+            _exoPlayer!!.removeListener(playerListener)
+            _exoPlayer!!.release()
+            _exoPlayer = null
+        }
         _uiState.update {
             it.copy(
                 isPlaying = false,
-                currentPosition = 0L,
                 duration = 0L,
                 bufferedPosition = 0L,
-                isLoading = true, // Set to true as player is released
+                isLoading = true,
                 error = null
-                // title could be cleared or kept based on desired UX
+                // currentPosition is NOT changed here
             )
         }
     }
@@ -251,6 +285,7 @@ class VideoPlayerViewModel @Inject constructor(
                 playerTitle = targetPlayItem.title
             )
         }
+        positionToRestore = 0L // Ensure new item in playlist starts from beginning
         setMediaItem(targetPlayItem.playUrl, targetPlayItem.title)
         if (_uiState.value.isPlaying || isExplicitSelection) { // if was playing or user explicitly selected, start playing new item
             play()
@@ -292,6 +327,38 @@ class VideoPlayerViewModel @Inject constructor(
         _uiState.update { it.copy(isFullscreen = !it.isFullscreen) }
     }
 
+    fun enterLandscapeFullscreen() {
+        _uiState.update {
+            it.copy(
+                isFullscreen = true,
+                desiredOrientation = DesiredScreenOrientation.LANDSCAPE
+            )
+        }
+    }
+
+    fun enterPortraitFullscreen() { // Added for completeness, though landscape is primary for video
+        _uiState.update {
+            it.copy(
+                isFullscreen = true,
+                desiredOrientation = DesiredScreenOrientation.PORTRAIT
+            )
+        }
+    }
+
+    fun exitFullscreen() {
+        _uiState.update {
+            it.copy(
+                isFullscreen = false,
+                desiredOrientation = DesiredScreenOrientation.SYSTEM_DEFAULT
+            )
+        }
+    }
+
+    // fun toggleOrientationFullscreen() { // Ensure this is removed
+    // Note: The diff hunk above already handled removal of the specific `toggleOrientationFullscreen` block.
+    // This search pattern is to ensure no other instance is left, if there were multiple.
+    // However, it's likely redundant given the previous change.
+    // For safety, I'm making this search specifically for the content that should be gone.
     // fun toggleOrientationFullscreen() {
     //     // This method is being removed. Device orientation is system-controlled.
     //     // _uiState.update { it.copy(isOrientationFullscreen = !it.isOrientationFullscreen) }
@@ -365,8 +432,17 @@ class VideoPlayerViewModel @Inject constructor(
             }
             when (playbackState) {
                 Player.STATE_READY -> {
-                    // Duration might be available now
-                     _uiState.update { it.copy(duration = _exoPlayer?.duration?.coerceAtLeast(0L) ?: 0L) }
+                    _uiState.update { it.copy(duration = _exoPlayer?.duration?.coerceAtLeast(0L) ?: 0L) }
+                    if (positionToRestore >= 0) {
+                        _exoPlayer?.seekTo(positionToRestore)
+                        positionToRestore = -1L // Reset after restoring position
+                    }
+
+                    // ADDED LOGIC FOR PLAYWHENREADY RESTORATION
+                    if (playWhenReadyToRestore) {
+                        _exoPlayer?.play()
+                    }
+                    playWhenReadyToRestore = false // Reset flag
                 }
                 Player.STATE_ENDED -> {
                     _uiState.update { it.copy(isPlaying = false /*, currentPosition = 0L // or keep at end */) }
