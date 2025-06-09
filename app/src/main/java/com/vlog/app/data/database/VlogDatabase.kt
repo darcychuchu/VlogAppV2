@@ -4,8 +4,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
+import com.vlog.app.data.cache.FilterUrlCacheDao
+import com.vlog.app.data.cache.FilterUrlCacheEntity
 import com.vlog.app.data.categories.CategoryDao
 import com.vlog.app.data.categories.CategoriesEntity
+import com.vlog.app.data.comments.CommentDao
+import com.vlog.app.data.comments.CommentEntity
 import com.vlog.app.data.favorites.FavoritesDao
 import com.vlog.app.data.favorites.FavoritesEntity
 import com.vlog.app.data.histories.search.SearchHistoryDao
@@ -24,9 +28,11 @@ import com.vlog.app.data.videos.VideoEntity
         FavoritesEntity::class,
         WatchHistoryEntity::class,
         SearchHistoryEntity::class,
-        GatherItemEntity::class
+        GatherItemEntity::class,
+        CommentEntity::class,
+        FilterUrlCacheEntity::class // Added FilterUrlCacheEntity
     ],
-    version = 1,
+    version = 3, // Incremented version for schema change
     exportSchema = false
 )
 abstract class VlogDatabase : RoomDatabase() {
@@ -37,6 +43,8 @@ abstract class VlogDatabase : RoomDatabase() {
     abstract fun watchHistoryDao(): WatchHistoryDao
     abstract fun searchHistoryDao(): SearchHistoryDao
     abstract fun gatherItemDao(): GatherItemDao
+    abstract fun commentDao(): CommentDao
+    abstract fun filterUrlCacheDao(): FilterUrlCacheDao // Added FilterUrlCacheDao accessor
 
     companion object {
         @Volatile
@@ -70,7 +78,8 @@ abstract class VlogDatabase : RoomDatabase() {
                     VlogDatabase::class.java,
                     "vlog_database"
                 )
-                    //.addMigrations(MIGRATION_1_2)
+                    //.addMigrations(MIGRATION_1_2) // Example: Add specific migrations if needed
+                    .fallbackToDestructiveMigration() // Added for schema change handling
                     .build()
                 INSTANCE = instance
                 instance

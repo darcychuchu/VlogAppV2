@@ -6,6 +6,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.vlog.app.data.categories.CategoryDao
 import com.vlog.app.data.categories.CategoryService
+import com.vlog.app.data.comments.CommentService
 import com.vlog.app.data.database.VlogDatabase
 import com.vlog.app.data.favorites.FavoriteService
 import com.vlog.app.data.favorites.FavoritesDao
@@ -190,5 +191,9 @@ object NetworkModule {
         return retrofit.create(StoriesService::class.java)
     }
 
-
+    @Provides
+    @Singleton
+    fun provideCommentService(retrofit: Retrofit): CommentService {
+        return retrofit.create(CommentService::class.java)
+    }
 }

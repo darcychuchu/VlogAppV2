@@ -1,6 +1,8 @@
 package com.vlog.app.data.videos
 
 import androidx.room.*
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -83,6 +85,42 @@ interface VideoDao {
     @Query("SELECT version FROM videos WHERE id = :id")
     suspend fun getVideoVersion(id: String): Int?
 
+    @RawQuery
+    suspend fun getSimilarVideosRaw(query: SupportSQLiteQuery): List<VideoEntity>
+
+    suspend fun getSimilarVideos(categoryId: String, tags: List<String>, regions: List<String>, limit: Int, excludeId: String): List<VideoEntity> {
+        val sb = StringBuilder()
+        sb.append("SELECT * FROM videos WHERE categoryId = ? AND id != ? ")
+        val args = mutableListOf<Any?>()
+        args.add(categoryId)
+        args.add(excludeId)
+
+        if (tags.isNotEmpty()) {
+            sb.append("AND (")
+            tags.forEachIndexed { index, tag ->
+                if (index > 0) sb.append(" OR ")
+                sb.append("tags LIKE ?")
+                args.add("%${tag.trim()}%")
+            }
+            sb.append(") ")
+        }
+
+        if (regions.isNotEmpty()) {
+            sb.append("AND (")
+            regions.forEachIndexed { index, region ->
+                if (index > 0) sb.append(" OR ")
+                sb.append("region LIKE ?")
+                args.add("%${region.trim()}%")
+            }
+            sb.append(") ")
+        }
+
+        sb.append("ORDER BY RANDOM() LIMIT ?")
+        args.add(limit)
+
+        val query = SimpleSQLiteQuery(sb.toString(), args.toTypedArray())
+        return getSimilarVideosRaw(query)
+    }
 
     //*****************************************************************************
     @Transaction
