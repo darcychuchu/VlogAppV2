@@ -1,5 +1,6 @@
 package com.vlog.app.data.videos
 
+import android.util.Log
 import androidx.room.*
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
@@ -106,6 +107,7 @@ interface VideoDao {
                 // Using (',' || column || ',' LIKE '%,value,%' OR column = 'value')
                 // Must also escape the 'value' itself for LIKE special characters.
                 val escapedTag = tag.replace("%", "\\%").replace("_", "\\_") // Use standard SQL escape for % and _
+                // Ensure this line is exactly as follows:
                 sb.append(" (',' || tags || ',' LIKE ? ESCAPE '\\'")
                 args.add("%,${escapedTag},%")
                 sb.append(" OR tags = ?")
@@ -120,6 +122,7 @@ interface VideoDao {
             processedRegions.forEachIndexed { index, region ->
                 if (index > 0) sb.append(" OR ")
                 val escapedRegion = region.replace("%", "\\%").replace("_", "\\_")
+                // Ensure this line is exactly as follows:
                 sb.append(" (',' || region || ',' LIKE ? ESCAPE '\\'")
                 args.add("%,${escapedRegion},%")
                 sb.append(" OR region = ?")
@@ -131,6 +134,13 @@ interface VideoDao {
 
         sb.append("ORDER BY RANDOM() LIMIT ?")
         args.add(limit)
+
+        Log.d("VideoDao_SimilarVideos", "Query: ${sb.toString()}")
+        // Enhanced argument logging:
+        Log.d("VideoDao_SimilarVideos", "Number of Args: ${args.size}")
+        for (i in args.indices) {
+            Log.d("VideoDao_SimilarVideos", "Arg[${i}] (${args[i]?.javaClass?.simpleName ?: "NULL_Class"}): ${args[i]?.toString() ?: "null_value"}")
+        }
 
         val query = SimpleSQLiteQuery(sb.toString(), args.toTypedArray())
         return getSimilarVideosRaw(query)
