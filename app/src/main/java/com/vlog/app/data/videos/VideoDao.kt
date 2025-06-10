@@ -95,22 +95,36 @@ interface VideoDao {
         args.add(categoryId)
         args.add(excludeId)
 
-        if (tags.isNotEmpty()) {
+        val processedTags = tags.map { it.trim() }.filter { it.isNotBlank() }
+        val processedRegions = regions.map { it.trim() }.filter { it.isNotBlank() }
+
+        if (processedTags.isNotEmpty()) {
             sb.append("AND (")
-            tags.forEachIndexed { index, tag ->
+            processedTags.forEachIndexed { index, tag ->
                 if (index > 0) sb.append(" OR ")
-                sb.append("tags LIKE ?")
-                args.add("%${tag.trim()}%")
+                // Robust matching for comma-separated values:
+                // Using (',' || column || ',' LIKE '%,value,%' OR column = 'value')
+                // Must also escape the 'value' itself for LIKE special characters.
+                val escapedTag = tag.replace("%", "\\%").replace("_", "\\_") // Use standard SQL escape for % and _
+                sb.append(" (',' || tags || ',' LIKE ? ESCAPE '\\'")
+                args.add("%,${escapedTag},%")
+                sb.append(" OR tags = ?")
+                args.add(tag) // Exact match for single tag
+                sb.append(") ") // Close parenthesis for this tag's conditions
             }
-            sb.append(") ")
+            sb.append(") ") // Close parenthesis for the OR group of tags
         }
 
-        if (regions.isNotEmpty()) {
+        if (processedRegions.isNotEmpty()) {
             sb.append("AND (")
-            regions.forEachIndexed { index, region ->
+            processedRegions.forEachIndexed { index, region ->
                 if (index > 0) sb.append(" OR ")
-                sb.append("region LIKE ?")
-                args.add("%${region.trim()}%")
+                val escapedRegion = region.replace("%", "\\%").replace("_", "\\_")
+                sb.append(" (',' || region || ',' LIKE ? ESCAPE '\\'")
+                args.add("%,${escapedRegion},%")
+                sb.append(" OR region = ?")
+                args.add(region)
+                sb.append(") ")
             }
             sb.append(") ")
         }

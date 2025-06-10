@@ -353,7 +353,7 @@ class VideoDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            commentRepository.getComments(videoId = videoId, page = 1, pageSize = 20, forceRefresh = forceRefresh)
+            commentRepository.getComments(videoId = videoId, forceRefresh = forceRefresh)
                 .collectLatest { resource ->
                     _uiState.update { currentState ->
                         when (resource) {
