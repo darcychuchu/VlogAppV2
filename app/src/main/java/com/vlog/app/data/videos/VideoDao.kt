@@ -1,6 +1,9 @@
 package com.vlog.app.data.videos
 
+import android.util.Log
 import androidx.room.*
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -83,6 +86,53 @@ interface VideoDao {
     @Query("SELECT version FROM videos WHERE id = :id")
     suspend fun getVideoVersion(id: String): Int?
 
+    @RawQuery
+    suspend fun getSimilarVideosRaw(query: SupportSQLiteQuery): List<VideoEntity>
+
+    suspend fun getSimilarVideos(categoryId: String, tags: List<String>, regions: List<String>, limit: Int, excludeId: String): List<VideoEntity> {
+        val sb = StringBuilder()
+        sb.append("SELECT * FROM videos WHERE categoryId = ? AND id != ? ")
+        val args = mutableListOf<Any?>()
+        args.add(categoryId)
+        args.add(excludeId)
+
+        val processedTags = tags.map { it.trim() }.filter { it.isNotBlank() }
+        val processedRegions = regions.map { it.trim() }.filter { it.isNotBlank() }
+
+        if (processedTags.isNotEmpty()) {
+            sb.append("AND (")
+            processedTags.forEachIndexed { index, tag ->
+                if (index > 0) sb.append(" OR ")
+                val escapedTag = tag.replace("%", "\\%").replace("_", "\\_")
+                sb.append(" ('' || tags || '' LIKE ? ESCAPE '\\'")
+                args.add("%${escapedTag}%")
+                sb.append(" OR tags = ?")
+                args.add(tag)
+                sb.append(") ")
+            }
+            sb.append(") ")
+        }
+
+        if (processedRegions.isNotEmpty()) {
+            sb.append("AND (")
+            processedRegions.forEachIndexed { index, region ->
+                if (index > 0) sb.append(" OR ")
+                val escapedRegion = region.replace("%", "\\%").replace("_", "\\_")
+                sb.append(" ('' || region || '' LIKE ? ESCAPE '\\'")
+                args.add("%${escapedRegion}%")
+                sb.append(" OR region = ?")
+                args.add(region)
+                sb.append(") ")
+            }
+            sb.append(") ")
+        }
+
+        sb.append("ORDER BY RANDOM() LIMIT ?")
+        args.add(limit)
+        val query = SimpleSQLiteQuery(sb.toString(), args.toTypedArray())
+
+        return getSimilarVideosRaw(query)
+    }
 
     //*****************************************************************************
     @Transaction

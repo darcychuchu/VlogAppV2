@@ -1,10 +1,12 @@
 package com.vlog.app.data.videos
 
 import android.annotation.SuppressLint
+import android.util.Log
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.vlog.app.data.PaginatedResponse
+import com.vlog.app.data.cache.FilterUrlCacheDao
+import com.vlog.app.data.cache.FilterUrlCacheEntity
 import com.vlog.app.data.database.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -18,8 +20,12 @@ import javax.inject.Singleton
 class VideoRepository @Inject constructor(
     private val videoService: VideoService,
     private val videoDao: VideoDao,
-    private val gatherItemDao: GatherItemDao
+    private val gatherItemDao: GatherItemDao,
+    private val filterUrlCacheDao: FilterUrlCacheDao, // Added
+    private val moshi: Moshi // Added
 ) {
+
+    private val CACHE_DURATION_MS = 30 * 60 * 1000L // 30 minutes
 
     // 获取所有视频的Flow
     fun getAllVideos(): Flow<List<Videos>> {
@@ -38,6 +44,45 @@ class VideoRepository @Inject constructor(
         page: Int = 1,
         pageSize: Int = 24
     ): Result<PaginatedResponse<Videos>> {
+        // 1. Construct Cache Key
+        val cacheKeyBuilder = StringBuilder("filter_videos_v2")
+        cacheKeyBuilder.append("?typed=").append(typed)
+        cacheKeyBuilder.append("&categoryId=").append(categoryId ?: "null")
+        cacheKeyBuilder.append("&year=").append(year)
+        cacheKeyBuilder.append("&sort=").append(sort)
+        cacheKeyBuilder.append("&page=").append(page)
+        cacheKeyBuilder.append("&pageSize=").append(pageSize)
+        val cacheKey = cacheKeyBuilder.toString()
+
+        val responseType = Types.newParameterizedType(PaginatedResponse::class.java, Videos::class.java)
+        val adapter = moshi.adapter<PaginatedResponse<Videos>>(responseType)
+
+        try {
+            // 2. Delete Expired Cache
+            filterUrlCacheDao.deleteExpiredCache(System.currentTimeMillis() - CACHE_DURATION_MS)
+
+            // 3. Check Cache
+            val cachedEntity = filterUrlCacheDao.getCache(cacheKey)
+            if (cachedEntity != null) {
+                try {
+                    val cachedResponse = adapter.fromJson(cachedEntity.responseDataJson)
+                    if (cachedResponse != null) {
+                        Log.d("VideoRepository", "Returning cached response for $cacheKey")
+                        return Result.success(cachedResponse)
+                    } else {
+                        Log.w("VideoRepository", "Failed to deserialize cached JSON for $cacheKey. Fetching from network.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("VideoRepository", "Error deserializing cached JSON for $cacheKey: ${e.message}. Fetching from network.", e)
+                }
+            }
+        } catch (cacheReadEx: Exception) {
+            Log.e("VideoRepository", "Error accessing filter URL cache: ${cacheReadEx.message}", cacheReadEx)
+            // Proceed to network fetch
+        }
+
+        // 4. Fetch from Network (if cache miss or error)
+        Log.d("VideoRepository", "No valid cache for $cacheKey. Fetching from network.")
         return try {
             val response = videoService.getVideos(
                 typed = typed,
@@ -45,17 +90,28 @@ class VideoRepository @Inject constructor(
                 year = year,
                 orderBy = sort,
                 page = page,
-                size = pageSize)
-                
-                if (response.code == 200 && response.data != null) {
-                    // 更新本地数据库
-                    val entities = response.data.items?.map { it.toEntity() } ?: emptyList()
-                    videoDao.updateVideosWithVersionCheck(entities)
-                    Result.success(response.data)
-                } else {
-                    Result.failure(Exception(response.message ?: "获取视频列表失败"))
+                size = pageSize
+            )
+
+            if (response.code == 200 && response.data != null) {
+                val apiResponseData = response.data
+                // Update local DB (existing logic)
+                val entities = apiResponseData.items?.map { it.toEntity() } ?: emptyList()
+                videoDao.updateVideosWithVersionCheck(entities)
+
+                // Save to Cache
+                try {
+                    val jsonResponse = adapter.toJson(apiResponseData)
+                    val newCacheEntity = FilterUrlCacheEntity(cacheKey, System.currentTimeMillis(), jsonResponse)
+                    filterUrlCacheDao.insertCache(newCacheEntity)
+                    Log.d("VideoRepository", "Saved response to cache for $cacheKey")
+                } catch (cacheWriteEx: Exception) {
+                    Log.e("VideoRepository", "Error saving response to cache for $cacheKey: ${cacheWriteEx.message}", cacheWriteEx)
                 }
-            // Local fetching logic removed - always fetch from API for this function
+                Result.success(apiResponseData)
+            } else {
+                Result.failure(Exception(response.message ?: "获取视频列表失败 Code: ${response.code}"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -139,7 +195,7 @@ class VideoRepository @Inject constructor(
 
     fun getGatherList(videoId: String): Flow<Resource<List<GatherList>>> = flow {
         emit(Resource.Loading())
-        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+        // Using injected moshi instance now
         val listType = Types.newParameterizedType(List::class.java, GatherList::class.java)
         val gatherListAdapter = moshi.adapter<List<GatherList>>(listType)
 
@@ -190,6 +246,41 @@ class VideoRepository @Inject constructor(
 
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Unknown error fetching gather list", null))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getYouLikeMoreVideos(
+        categoryId: String,
+        tagsCsv: String?,
+        regionCsv: String?,
+        limit: Int,
+        currentVideoId: String
+    ): Flow<Resource<List<Videos>>> = flow {
+        emit(Resource.Loading())
+        try {
+            val parsedTags = tagsCsv?.split('/')
+                ?.map { it.trim() }
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
+
+            val parsedRegions = regionCsv?.split('/')
+                ?.map { it.trim() }
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
+
+            val videoEntities = videoDao.getSimilarVideos(
+                categoryId = categoryId,
+                tags = parsedTags,
+                regions = parsedRegions,
+                limit = limit,
+                excludeId = currentVideoId
+            )
+
+            val videos = videoEntities.map { it.toVideos() }
+            emit(Resource.Success(videos))
+        } catch (e: Exception) {
+            // Consider logging the exception e
+            emit(Resource.Error("Failed to load similar videos: ${e.message}"))
         }
     }.flowOn(Dispatchers.IO)
 }

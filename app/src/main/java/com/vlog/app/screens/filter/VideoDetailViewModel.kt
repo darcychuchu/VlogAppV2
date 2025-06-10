@@ -1,12 +1,14 @@
 package com.vlog.app.screens.filter
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.data.videos.VideoRepository
-import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.comments.CommentRepository
 import com.vlog.app.data.comments.Comments
 import com.vlog.app.data.database.Resource
+import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.videos.VideoRepository
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
 import com.vlog.app.data.videos.Videos
@@ -17,7 +19,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +31,7 @@ import javax.inject.Inject
 class VideoDetailViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
     private val watchHistoryRepository: WatchHistoryRepository,
+    private val commentRepository: CommentRepository, // Added CommentRepository
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -43,7 +48,24 @@ class VideoDetailViewModel @Inject constructor(
             fetchGatherList()
             loadWatchHistory()
             loadComments()
-            loadRecommendedVideos()
+            // loadRecommendedVideos() // Removed from here
+
+            // New block to observe videoDetail changes for triggering recommendations
+            viewModelScope.launch {
+                // Use uiState here, not _uiState, to get the public StateFlow
+                uiState.map { it.videoDetail }
+                    .distinctUntilChanged() // Only react to actual changes in videoDetail
+                    .collectLatest { currentVideoDetail -> // Use collectLatest if subsequent calls should cancel previous
+                        // Check if the videoDetail is now populated, is for the correct videoId,
+                        // and if recommendations haven't been loaded yet for this video.
+                        if (currentVideoDetail != null &&
+                            currentVideoDetail.id == videoId &&
+                            uiState.value.recommendedVideos.isEmpty() && // Check current state for recommendations
+                            !uiState.value.isLoadingRecommendations) { // Avoid re-triggering if already loading
+                            loadRecommendedVideos()
+                        }
+                    }
+            }
         } else {
             _uiState.update { it.copy(error = "Video ID is missing", isLoading = false) }
         }
@@ -344,29 +366,31 @@ class VideoDetailViewModel @Inject constructor(
     /**
      * 加载评论
      */
-    fun loadComments() {
-        _uiState.update { it.copy(isLoadingComments = true) }
+    fun loadComments(forceRefresh: Boolean = false) {
+        if (videoId.isBlank()) {
+            _uiState.update { it.copy(isLoadingComments = false, comments = emptyList(), error = "Video ID is missing for comments") }
+            return
+        }
 
         viewModelScope.launch {
-//            try {
-//                val comments = commentRepository.getComments(videoId, 0)
-//                ////Log.d("VideoDetailViewModel", "Comments loaded: ${comments.size}")
-//
-//                _uiState.update {
-//                    it.copy(
-//                        comments = comments,
-//                        isLoadingComments = false
-//                    )
-//                }
-//            } catch (e: Exception) {
-//                Log.e("VideoDetailViewModel", "Error loading comments", e)
-//                _uiState.update {
-//                    it.copy(
-//                        isLoadingComments = false,
-//                        error = e.message ?: "Failed to load comments"
-//                    )
-//                }
-//            }
+            commentRepository.getComments(videoId = videoId, forceRefresh = forceRefresh)
+                .collectLatest { resource ->
+                    _uiState.update { currentState ->
+                        when (resource) {
+                            is Resource.Loading -> currentState.copy(isLoadingComments = true)
+                            is Resource.Success -> currentState.copy(
+                                isLoadingComments = false,
+                                comments = resource.data ?: emptyList(),
+                                error = null // Clear error on success
+                            )
+                            is Resource.Error -> currentState.copy(
+                                isLoadingComments = false,
+                                comments = resource.data ?: currentState.comments, // Show stale data if available
+                                error = resource.message ?: "Failed to load comments"
+                            )
+                        }
+                    }
+                }
         }
     }
 
@@ -374,21 +398,39 @@ class VideoDetailViewModel @Inject constructor(
      * 发表评论
      */
     fun postComment(content: String) {
-        if (content.isBlank()) return
+        if (videoId.isBlank()) {
+            _uiState.update { it.copy(error = "Video ID is missing, cannot post comment.") }
+           return
+       }
+        if (content.isBlank()) {
+            // Optionally provide feedback to user that comment cannot be blank
+            // For now, just return
+            return
+        }
 
         viewModelScope.launch {
-//            try {
-//                val success = commentRepository.postComment(videoId, 0, content)
-//                if (success) {
-//                    // 发表成功后重新加载评论
-//                    loadComments()
-//                }
-//            } catch (e: Exception) {
-//                Log.e("VideoDetailViewModel", "Error posting comment", e)
-//                _uiState.update {
-//                    it.copy(error = e.message ?: "Failed to post comment")
-//                }
-//            }
+            // Simple loading state using isLoadingComments for now
+            _uiState.update { it.copy(isLoadingComments = true, error = null) }
+            commentRepository.postComment(videoId = videoId, content = content)
+                .collectLatest { resource ->
+                    when (resource) {
+                        is Resource.Loading -> {
+                            // Handled by the initial update before collect if simple loading is used
+                        }
+                        is Resource.Success -> {
+                            // isLoadingComments will be reset by loadComments
+                            loadComments(forceRefresh = true) // Refresh comments list
+                        }
+                        is Resource.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    isLoadingComments = false,
+                                    error = resource.message ?: "Failed to post comment"
+                                )
+                            }
+                        }
+                    }
+                }
         }
     }
 
@@ -396,31 +438,58 @@ class VideoDetailViewModel @Inject constructor(
      * 加载推荐视频
      */
     fun loadRecommendedVideos() {
-        _uiState.update { it.copy(isLoadingRecommendations = true) }
+        // Ensure videoId is valid before proceeding.
+        if (videoId.isBlank()) {
+            _uiState.update { it.copy(isLoadingRecommendations = false, error = "Cannot load recommendations without videoId") }
+            return
+        }
+
+        // Set initial loading state
+        _uiState.update { it.copy(isLoadingRecommendations = true, error = null) }
 
         viewModelScope.launch {
-//            val result = videoRepository.getMoreLiked(videoId, 0)
-//
-//            if (result.isSuccess) {
-//                val videos = result.getOrNull() ?: emptyList()
-//                ////Log.d("VideoDetailViewModel", "Recommended videos loaded: ${videos.size}")
-//
-//                _uiState.update {
-//                    it.copy(
-//                        recommendedVideos = videos,
-//                        isLoadingRecommendations = false
-//                    )
-//                }
-//            } else {
-//                val exception = result.exceptionOrNull()
-//                Log.e("VideoDetailViewModel", "Error loading recommended videos", exception)
-//                _uiState.update {
-//                    it.copy(
-//                        isLoadingRecommendations = false,
-//                        error = exception?.message ?: "Failed to load recommendations"
-//                    )
-//                }
-//            }
+            // It's safer to get the most recent videoDetail state within the coroutine
+            val currentVideo = _uiState.value.videoDetail
+
+            if (currentVideo == null || currentVideo.id.isNullOrEmpty()) {
+                _uiState.update { it.copy(isLoadingRecommendations = false, error = "Video details not available for recommendations.") }
+                return@launch
+            }
+
+            // Ensure categoryId is not null or blank; if it is, recommendations might not be relevant or possible.
+            val categoryId = currentVideo.categoryId
+            if (categoryId.isNullOrBlank()) {
+                _uiState.update { it.copy(isLoadingRecommendations = false, recommendedVideos = emptyList(), error = "Video category not available for recommendations.") }
+                return@launch
+            }
+
+            val tags = currentVideo.tags
+            val region = currentVideo.region
+            val limit = 10 // Define limit
+
+            videoRepository.getYouLikeMoreVideos(
+                categoryId = categoryId,
+                tagsCsv = tags,
+                regionCsv = region,
+                limit = limit,
+                currentVideoId = videoId // Use the videoId from SavedStateHandle
+            ).collectLatest { resource ->
+                _uiState.update { currentState ->
+                    when (resource) {
+                        is Resource.Loading -> currentState.copy(isLoadingRecommendations = true)
+                        is Resource.Success -> currentState.copy(
+                            isLoadingRecommendations = false,
+                            recommendedVideos = resource.data ?: emptyList(),
+                            error = null // Clear previous error
+                        )
+                        is Resource.Error -> currentState.copy(
+                            isLoadingRecommendations = false,
+                            recommendedVideos = emptyList(), // Clear recommendations on error
+                            error = resource.message ?: "Failed to load recommendations"
+                        )
+                    }
+                }
+            }
         }
     }
 
