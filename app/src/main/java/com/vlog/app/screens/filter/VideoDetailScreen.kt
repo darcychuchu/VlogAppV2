@@ -318,7 +318,7 @@ fun VideoDetailScreen(
                                         videos = uiState.recommendedVideos,
                                         isLoading = uiState.isLoadingRecommendations,
                                         onVideoClick = { videoId ->
-                                            navController.navigate("video/$videoId")
+                                            navController.navigate("filter_detail/$videoId")
                                         }
                                     )
 

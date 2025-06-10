@@ -80,13 +80,13 @@ fun WatchHistoryScreen(
             uiState = uiState,
             onItemClick = { watchHistory ->
                 // 从观看历史继续观看，传递播放参数
-                val route = NavigationRoutes.FullScreenRoute.VideoPlayer.createRoute(
+                val route = NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(
                     videoId = watchHistory.videoId,
-                    gatherId = watchHistory.gatherId ?: "",
-                    url = watchHistory.playerUrl ?: "",
-                    episodeTitle = watchHistory.episodeTitle ?: "",
-                    lastPlayedPosition = watchHistory.lastPlayedPosition,
-                    episodeIndex = watchHistory.episodeIndex
+//                    gatherId = watchHistory.gatherId ?: "",
+//                    url = watchHistory.playerUrl ?: "",
+//                    episodeTitle = watchHistory.episodeTitle ?: "",
+//                    lastPlayedPosition = watchHistory.lastPlayedPosition,
+//                    episodeIndex = watchHistory.episodeIndex
                 )
                 navController.navigate(route)
             },

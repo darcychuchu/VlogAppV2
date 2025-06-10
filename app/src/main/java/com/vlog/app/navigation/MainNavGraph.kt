@@ -74,7 +74,7 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
                 navController.popBackStack()
             },
             onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+                navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId))
             }
         )
     }
@@ -147,7 +147,7 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
                 navController.popBackStack()
             },
             onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+                navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId))
             }
         )
     }

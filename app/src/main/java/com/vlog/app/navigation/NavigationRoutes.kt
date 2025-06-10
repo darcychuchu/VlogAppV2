@@ -29,13 +29,6 @@ object NavigationRoutes {
 
     // 全屏导航路由
     sealed class FullScreenRoute(val route: String) {
-        object VideoDetail : FullScreenRoute("video_detail/{videoId}") {
-            fun createRoute(videoId: String) = "video_detail/$videoId"
-        }
-        object VideoPlayer : FullScreenRoute("video_player/{videoId}?url={url}&gatherId={gatherId}&episodeTitle={episodeTitle}&lastPlayedPosition={lastPlayedPosition}&episodeIndex={episodeIndex}") {
-            fun createRoute(videoId: String, url: String, gatherId: String, episodeTitle: String, lastPlayedPosition: Long = 0, episodeIndex: Int = 0) =
-                "videos/player/$videoId?url=${url.encodeUrl()}&gatherId=${gatherId.encodeUrl()}&episodeTitle=${episodeTitle.encodeUrl()}&lastPlayedPosition=$lastPlayedPosition&episodeIndex=$episodeIndex"
-        }
 
         object FilterDetail : FullScreenRoute("filter_detail/{videoId}") {
             fun createRoute(videoId: String) = "filter_detail/$videoId"
