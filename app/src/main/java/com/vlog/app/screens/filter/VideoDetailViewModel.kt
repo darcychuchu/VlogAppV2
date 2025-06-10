@@ -45,7 +45,24 @@ class VideoDetailViewModel @Inject constructor(
             fetchGatherList()
             loadWatchHistory()
             loadComments()
-            loadRecommendedVideos()
+            // loadRecommendedVideos() // Removed from here
+
+            // New block to observe videoDetail changes for triggering recommendations
+            viewModelScope.launch {
+                // Use uiState here, not _uiState, to get the public StateFlow
+                uiState.map { it.videoDetail }
+                    .distinctUntilChanged() // Only react to actual changes in videoDetail
+                    .collectLatest { currentVideoDetail -> // Use collectLatest if subsequent calls should cancel previous
+                        // Check if the videoDetail is now populated, is for the correct videoId,
+                        // and if recommendations haven't been loaded yet for this video.
+                        if (currentVideoDetail != null &&
+                            currentVideoDetail.id == videoId &&
+                            uiState.value.recommendedVideos.isEmpty() && // Check current state for recommendations
+                            !uiState.value.isLoadingRecommendations) { // Avoid re-triggering if already loading
+                            loadRecommendedVideos()
+                        }
+                    }
+            }
         } else {
             _uiState.update { it.copy(error = "Video ID is missing", isLoading = false) }
         }
