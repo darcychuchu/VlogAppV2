@@ -1,20 +1,19 @@
 package com.vlog.app.screens.profile
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.* // Import Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material3.* // Import Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavController // Import NavController for ProfileSettingsScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -80,26 +79,6 @@ fun ProfileNavHost(
         // 个人主页
         composable(ProfileScreen.Main.route) {
             ProfileUserScreen(
-                onNavigateToLogin = onNavigateToLogin,
-                onNavigateToSettings = {
-                    navController.navigate(ProfileScreen.Settings.route)
-                },
-                onNavigateToFollowers = {
-                    navController.navigate(ProfileScreen.Followers.route)
-                },
-                onNavigateToFollowing = {
-                    navController.navigate(ProfileScreen.Following.route)
-                },
-                onNavigateToMessages = {
-                    navController.navigate(ProfileScreen.Messages.route)
-                },
-                onNavigateToComments = {
-                    navController.navigate(ProfileScreen.Comments.route)
-                },
-                onNavigateToEditProfile = {
-                    navController.navigate(ProfileScreen.EditProfile.route)
-                },
-                onNavigateToStoryDetail = onNavigateToStoryDetail,
                 navController = navController
             )
         }
@@ -107,6 +86,7 @@ fun ProfileNavHost(
         // 设置页面
         composable(ProfileScreen.Settings.route) {
             ProfileSettingsScreen(
+                navController = navController, // Pass the NavController
                 onNavigateBack = {
                     navController.popBackStack()
                 }
@@ -209,13 +189,13 @@ fun NavGraphBuilder.profileNavigation(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSettingsScreen(
+    navController: NavController, // Added NavController parameter
     onNavigateBack: () -> Unit
 ) {
-    // 设置页面的实现将在后续添加
     Scaffold(
         topBar = {
             ProfileTopBar(
-                title = "设置",
+                title = "设置", // Settings
                 onNavigateBack = onNavigateBack
             )
         }
@@ -223,14 +203,59 @@ fun ProfileSettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .padding(16.dp) // Add padding for items
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = "暂无设置",
-                style = MaterialTheme.typography.titleLarge
-            )
+            // Watch History Item
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate(NavigationRoutes.OtherRoute.WatchHistory.route) }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.History,
+                    contentDescription = "观看历史",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("观看历史", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            // Search History Item
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate(NavigationRoutes.OtherRoute.Search.createRoute()) }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = "搜索历史",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("搜索历史", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            // App Update Item
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate(NavigationRoutes.OtherRoute.AppUpdate.route) }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.SystemUpdate,
+                    contentDescription = "版本更新",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("版本更新", style = MaterialTheme.typography.bodyLarge)
+            }
         }
     }
 }
