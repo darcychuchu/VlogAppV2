@@ -5,6 +5,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
+
 // Removed: import retrofit2.http.Query
 
 interface CommentService {
@@ -22,12 +24,14 @@ interface CommentService {
     /**
      * Posts a new comment to a specific video.
      * @param videoId The ID of the video to which the comment is being posted.
-     * @param commentRequestBody The content of the comment.
+     * @param title The content of the comment.
+     * @param description The content of the comment.
      * @return ApiResponse containing the newly created Comment.
      */
     @POST("videos/comments-created/{videoId}")
     suspend fun postComment(
         @Path("videoId") videoId: String,
-        @Body commentRequestBody: CommentPostRequest
+        @Query("title") title: String?,
+        @Query("description") description: String
     ): ApiResponse<Comments> // Assuming API returns the created comment
 }

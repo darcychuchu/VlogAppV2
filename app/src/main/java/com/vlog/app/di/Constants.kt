@@ -41,4 +41,7 @@ object Constants {
     const val ENDPOINT_STORY_LIST = "{name}/stories/list"
     const val ENDPOINT_STORY_CREATE = "{name}/stories-created"
 
+
+    // Global stories
+    const val ENDPOINT_GLOBAL_STORY_LIST = "stories/list"
 }

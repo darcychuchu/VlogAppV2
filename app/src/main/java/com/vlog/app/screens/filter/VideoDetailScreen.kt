@@ -48,7 +48,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -193,7 +192,7 @@ fun VideoDetailScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
-                                ///////////////////////////////
+
                                 Column(
                                     modifier = Modifier.fillMaxSize().padding(16.dp)
                                 ) {
@@ -326,9 +325,6 @@ fun VideoDetailScreen(
                                     Spacer(modifier = Modifier.height(16.dp))
                                 }
 
-
-
-                                //////////////////////////
 
 
                             }

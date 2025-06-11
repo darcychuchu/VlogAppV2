@@ -8,12 +8,9 @@ import androidx.room.PrimaryKey
 data class CommentEntity(
     @PrimaryKey
     val id: String, // Assuming 'id' from Comments data class is unique and non-null for entity
-
-    @ColumnInfo(index = true) // Indexed for faster lookups by videoId
-    val videoId: String,
-
     val createdAt: Long?,
     val isTyped: Int?,
+    @ColumnInfo(index = true) // Indexed for faster lookups by videoId
     val quoteId: String?,
     val parentId: String?,
     val title: String?,
@@ -29,7 +26,6 @@ data class CommentEntity(
 fun Comments.toEntity(videoId: String): CommentEntity {
     return CommentEntity(
         id = this.id ?: throw IllegalArgumentException("Comment ID cannot be null for entity"),
-        videoId = videoId,
         createdAt = this.createdAt,
         isTyped = this.isTyped,
         quoteId = this.quoteId,

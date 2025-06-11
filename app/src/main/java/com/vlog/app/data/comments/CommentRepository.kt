@@ -111,14 +111,12 @@ class CommentRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun postComment(videoId: String, content: String): Flow<Resource<Unit>> = flow {
+    fun postComment(videoId: String, title: String?, description: String): Flow<Resource<String>> = flow {
         emit(Resource.Loading())
-        Log.d(TAG, "Posting comment for videoId: $videoId, content: '$content'")
-
-        val requestBody = CommentPostRequest(content = content)
+        Log.d(TAG, "Posting comment for videoId: $videoId, content: '$description'")
 
         // Assuming safeApiCall handles ApiResponse and extracts .data
-        val networkResult = safeApiCall { commentService.postComment(videoId, requestBody).data }
+        val networkResult = safeApiCall { commentService.postComment(videoId, title, description) }
 
         if (networkResult.isSuccess) {
             val postedComment = networkResult.getOrNull()
@@ -126,17 +124,17 @@ class CommentRepository @Inject constructor(
                 Log.d(TAG, "Successfully posted comment. API returned: $postedComment")
                 try {
                     // Add to local database
-                    val commentEntity = postedComment.toEntity(videoId)
+                    //val commentEntity = postedComment.toEntity(videoId)
                     // postedComment.toEntity(videoId) should set lastRefreshed via System.currentTimeMillis()
-                    commentDao.insertAll(listOf(commentEntity))
+                    //commentDao.insertAll(listOf(commentEntity))
                     Log.d(TAG, "Inserted posted comment into local DB.")
-                    emit(Resource.Success(Unit))
+                    emit(Resource.Success(""))
                 } catch (e: Exception) {
                     Log.e(TAG, "DB Error inserting posted comment: ${e.message}", e)
                     // API post was successful, but local save failed.
                     // Emit Success as the primary operation succeeded.
                     // The local cache will be updated on the next fetch.
-                    emit(Resource.Success(Unit))
+                    emit(Resource.Success(""))
                 }
             } else {
                 // This case might occur if API returns 200 OK but with null data in ApiResponse.data
@@ -145,7 +143,7 @@ class CommentRepository @Inject constructor(
                 Log.w(TAG, "Comment posted successfully, but API did not return the comment object or data was null.")
                 // Consider this a success for the operation of posting.
                 // The local cache will update on the next full refresh triggered by the ViewModel.
-                emit(Resource.Success(Unit))
+                emit(Resource.Success(""))
             }
         } else {
             val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error posting comment"
