@@ -33,23 +33,20 @@ class CommentRepository @Inject constructor(
         Log.d(TAG, "getComments called for quoteId: $quoteId, type: $commentType, forceRefresh: $forceRefresh")
 
         val initialLocalComments = try {
-            commentDao.getCommentsByQuoteIdAndType(quoteId, commentType).firstOrNull()?.map { it.toDomain() } ?: emptyList()
+            commentDao.getCommentsByQuoteIdAndType(quoteId).firstOrNull()?.map { it.toDomain() } ?: emptyList()
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading initial local comments for $quoteId ($commentType): ${e.message}", e)
             emptyList<Comments>()
         }
 
         val oldestTimestamp = try {
-            commentDao.getOldestCommentRefreshTimestamp(quoteId, commentType)
+            commentDao.getOldestCommentRefreshTimestamp(quoteId)
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting oldest timestamp for $quoteId ($commentType): ${e.message}", e)
             null
         }
 
         val initialCommentCount = try {
-            commentDao.getCommentCountByQuoteIdAndType(quoteId, commentType)
+            commentDao.getCommentCountByQuoteIdAndType(quoteId)
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting initial comment count for $quoteId ($commentType): ${e.message}", e)
             0
         }
 
@@ -77,19 +74,15 @@ class CommentRepository @Inject constructor(
                         // If API *does* include them, this explicit mapping might be redundant but safe.
                         comment.copy(
                             quoteId = quoteId, // Ensure this is set from the context
-                            commentType = commentType // Ensure this is set from the context
                         )
                     }
-                    Log.d(TAG, "Successfully fetched ${networkComments.size} comments from network for $quoteId ($commentType).")
-                    Log.d(TAG, "Deleting existing comments for $quoteId ($commentType) before inserting fresh list.")
                     try {
-                        commentDao.deleteCommentsByQuoteIdAndType(quoteId, commentType)
+                        commentDao.deleteCommentsByQuoteIdAndType(quoteId)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error deleting comments for $quoteId ($commentType): ${e.message}", e)
                     }
 
                     try {
-                        // Comments.toEntity() now uses quoteId and commentType from the Comments object itself
                         val commentEntities = networkComments.map { it.toEntity() }
                         commentDao.insertAll(commentEntities)
                     } catch (e: Exception) {
@@ -97,17 +90,14 @@ class CommentRepository @Inject constructor(
                     }
 
                     val updatedLocalComments = try {
-                        commentDao.getCommentsByQuoteIdAndType(quoteId, commentType).firstOrNull()?.map { it.toDomain() } ?: emptyList()
+                        commentDao.getCommentsByQuoteIdAndType(quoteId).firstOrNull()?.map { it.toDomain() } ?: emptyList()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error reading updated local comments for $quoteId ($commentType): ${e.message}", e)
-                        networkComments // Prefer to show what we got from network if DB fails after insert
+                        networkComments
                     }
-                    Log.d(TAG, "Emitting Resource.Success with ${updatedLocalComments.size} comments from DB for $quoteId ($commentType).")
                     emit(Resource.Success(updatedLocalComments))
                 } else {
-                    Log.w(TAG, "Network call successful but no comment data received for $quoteId ($commentType).")
                     try {
-                        commentDao.deleteCommentsByQuoteIdAndType(quoteId, commentType)
+                        commentDao.deleteCommentsByQuoteIdAndType(quoteId)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error deleting comments for $quoteId ($commentType) after null network response", e)
                     }
@@ -115,11 +105,9 @@ class CommentRepository @Inject constructor(
                 }
             } else {
                 val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error fetching comments for $quoteId ($commentType)"
-                Log.e(TAG, "API Error fetching comments: $errorMsg")
                 emit(Resource.Error(errorMsg, initialLocalComments))
             }
         } else {
-            Log.d(TAG, "Cache valid for $quoteId ($commentType). Emitting local comments: ${initialLocalComments.size}")
             emit(Resource.Success(initialLocalComments))
         }
     }.flowOn(Dispatchers.IO)
@@ -144,29 +132,23 @@ class CommentRepository @Inject constructor(
         if (networkResult.isSuccess) {
             var postedCommentApiResponse = networkResult.getOrNull() // This is ApiResponse<Comments>
             if (postedCommentApiResponse != null && postedCommentApiResponse.data != null) {
-                 var postedComment = postedCommentApiResponse.data!! // This is Comments object
-                Log.d(TAG, "Successfully posted comment for $quoteId ($commentType). API returned: $postedComment")
+                 var postedComment = postedCommentApiResponse.data // This is Comments object
                 try {
                     // Populate quoteId and commentType before saving to DB
                     postedComment = postedComment.copy(
-                        quoteId = quoteId,
-                        commentType = commentType
+                        quoteId = quoteId
                     )
                     val commentEntity = postedComment.toEntity()
                     commentDao.insertAll(listOf(commentEntity)) // insertAll expects a List
-                    Log.d(TAG, "Inserted posted comment into local DB for $quoteId ($commentType).")
                     emit(Resource.Success("Comment posted successfully.")) // Return a meaningful success message
                 } catch (e: Exception) {
-                    Log.e(TAG, "DB Error inserting posted comment for $quoteId ($commentType): ${e.message}", e)
                     emit(Resource.Success("Comment posted, local save failed."))
                 }
             } else {
-                Log.w(TAG, "Comment posted successfully for $quoteId ($commentType), but API did not return the comment object or data was null.")
                 emit(Resource.Success("Comment posted, no confirmation data."))
             }
         } else {
             val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error posting comment for $quoteId ($commentType)"
-            Log.e(TAG, "API Error posting comment: $errorMsg")
             emit(Resource.Error(errorMsg, null))
         }
     }.flowOn(Dispatchers.IO)

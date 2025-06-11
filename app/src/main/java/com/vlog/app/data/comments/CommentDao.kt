@@ -12,22 +12,22 @@ interface CommentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(comments: List<CommentEntity>)
 
-    @Query("SELECT * FROM comments WHERE quoteId = :quoteId AND commentType = :type ORDER BY createdAt DESC")
-    fun getCommentsByQuoteIdAndType(quoteId: String, type: String): Flow<List<CommentEntity>>
+    @Query("SELECT * FROM comments WHERE quoteId = :quoteId ORDER BY createdAt DESC")
+    fun getCommentsByQuoteIdAndType(quoteId: String): Flow<List<CommentEntity>>
 
     /**
      * Gets the timestamp of the oldest refresh for any comment related to the given quoteId and type.
      * If no comments for the quoteId and type have a lastRefreshed timestamp (e.g., all are null),
      * or if there are no comments for the quoteId and type, this will return null.
      */
-    @Query("SELECT MIN(lastRefreshed) FROM comments WHERE quoteId = :quoteId AND commentType = :type")
-    suspend fun getOldestCommentRefreshTimestamp(quoteId: String, type: String): Long?
+    @Query("SELECT MIN(lastRefreshed) FROM comments WHERE quoteId = :quoteId")
+    suspend fun getOldestCommentRefreshTimestamp(quoteId: String): Long?
 
-    @Query("DELETE FROM comments WHERE quoteId = :quoteId AND commentType = :type")
-    suspend fun deleteCommentsByQuoteIdAndType(quoteId: String, type: String)
+    @Query("DELETE FROM comments WHERE quoteId = :quoteId")
+    suspend fun deleteCommentsByQuoteIdAndType(quoteId: String)
 
-    @Query("SELECT COUNT(*) FROM comments WHERE quoteId = :quoteId AND commentType = :type")
-    suspend fun getCommentCountByQuoteIdAndType(quoteId: String, type: String): Int
+    @Query("SELECT COUNT(*) FROM comments WHERE quoteId = :quoteId")
+    suspend fun getCommentCountByQuoteIdAndType(quoteId: String): Int
 
     // Optional: A method to insert a single comment if needed for posting.
     // @Insert(onConflict = OnConflictStrategy.REPLACE)

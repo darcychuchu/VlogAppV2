@@ -46,7 +46,8 @@ import com.vlog.app.navigation.NavigationRoutes
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchHistoryScreen(
-    navController: NavController,
+    onNavigateBack: () -> Unit,
+    onVideoClick: (String) -> Unit,
     watchHistoryViewModel: WatchHistoryViewModel = hiltViewModel()
 ) {
     val uiState by watchHistoryViewModel.uiState.collectAsState()
@@ -57,7 +58,7 @@ fun WatchHistoryScreen(
             TopAppBar(
                 title = { Text("观看历史") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onNavigateBack ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
@@ -78,18 +79,7 @@ fun WatchHistoryScreen(
     ) { paddingValues ->
         WatchHistoryContent(
             uiState = uiState,
-            onItemClick = { watchHistory ->
-                // 从观看历史继续观看，传递播放参数
-                val route = NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(
-                    videoId = watchHistory.videoId,
-//                    gatherId = watchHistory.gatherId ?: "",
-//                    url = watchHistory.playerUrl ?: "",
-//                    episodeTitle = watchHistory.episodeTitle ?: "",
-//                    lastPlayedPosition = watchHistory.lastPlayedPosition,
-//                    episodeIndex = watchHistory.episodeIndex
-                )
-                navController.navigate(route)
-            },
+            onItemClick = onVideoClick,
             onDeleteItem = { videoId ->
                 watchHistoryViewModel.deleteWatchHistory(videoId)
             },
@@ -128,7 +118,7 @@ fun WatchHistoryScreen(
 @Composable
 fun WatchHistoryContent(
     uiState: WatchHistoryUiState,
-    onItemClick: (WatchHistoryEntity) -> Unit,
+    onItemClick: (String) -> Unit,
     onDeleteItem: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -175,7 +165,7 @@ fun WatchHistoryContent(
                     items(uiState.watchHistoryWithVideo) { history ->
                         WatchHistoryItem(
                             watchHistoryWithVideo = history,
-                            onClick = { onItemClick(history.watchHistory) },
+                            onClick = { onItemClick(history.watchHistory.videoId) },
                             onDelete = { onDeleteItem(history.watchHistory.videoId) }
                         )
                     }

@@ -12,17 +12,15 @@ import com.vlog.app.screens.favorites.FavoritesScreen
 import com.vlog.app.screens.filter.FilterScreen
 import com.vlog.app.screens.filter.VideoDetailScreen
 import com.vlog.app.screens.home.HomeScreen
-import com.vlog.app.screens.profile.AppUpdateScreen
-import com.vlog.app.screens.profile.WatchHistoryScreen
 import com.vlog.app.screens.publish.PublishScreen
-import com.vlog.app.screens.search.SearchScreen
 import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserHomeScreen
-import com.vlog.app.screens.users.UserStoriesDetailScreen // Added import for the new screen
-// Import for Text if PlaceholderUserStoriesDetailScreen will use it
+import com.vlog.app.screens.users.UserStoriesDetailScreen
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.vlog.app.screens.profile.ProfileScreen
+import com.vlog.app.screens.profile.profileNavigation
 import com.vlog.app.ui.screens.publish.PhotoPublishScreen
 
 /**
@@ -89,25 +87,42 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
         )
     }
 
-    composable(
-        route = "${NavigationRoutes.MainRoute.Profile.route}?username={username}",
-        arguments = listOf(
-            navArgument("username") {
-                type = NavType.StringType
-                defaultValue = ""
-                nullable = true
-            }
-        )
-    ) { backStackEntry ->
-        val username = backStackEntry.arguments?.getString("username") ?: ""
-        UserHomeScreen(
-            userName = username,
-            onNavigateBack = {
-                navController.popBackStack()
-            },
-            navController = navController
-        )
-    }
+//    composable(
+//        route = "${NavigationRoutes.MainRoute.Profile.route}?username={username}",
+//        arguments = listOf(
+//            navArgument("username") {
+//                type = NavType.StringType
+//                defaultValue = ""
+//                nullable = true
+//            }
+//        )
+//    ) { backStackEntry ->
+//        val username = backStackEntry.arguments?.getString("username") ?: ""
+//        UserHomeScreen(
+//            userName = username,
+//            onNavigateBack = {
+//                navController.popBackStack()
+//            },
+//            navController = navController
+//        )
+//    }
+
+    // profileNavigation 自定义二级导航
+    profileNavigation(
+        onNavigateToLogin = {
+            navController.navigate(NavigationRoutes.OtherRoute.Login.route)
+        },
+        onNavigateToVideoDetail = { videoId ->
+            navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId)) },
+        onNavigateToStoryDetail = { username, storyId ->
+            navController.navigate(NavigationRoutes.OtherRoute.UserStoryDetail.createRoute(username,storyId)) },
+        onNavigateToUserProfile = { username ->
+            navController.navigate(NavigationRoutes.OtherRoute.UserHome.createRoute(username))
+        },
+        onNavigateToFollowers = {  },
+        onNavigateToFollowing = { }
+    )
+
 }
 
 /**
@@ -135,42 +150,42 @@ private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController
  * 添加其他导航路由
  */
 private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
-    // 观看历史
-    composable(NavigationRoutes.OtherRoute.WatchHistory.route) {
-        WatchHistoryScreen(navController = navController)
-    }
+//    // 观看历史
+//    composable(NavigationRoutes.OtherRoute.WatchHistory.route) {
+//        WatchHistoryScreen(navController = navController)
+//    }
+//
+//    composable(
+//        route = "${NavigationRoutes.OtherRoute.Search.route}?query={query}",
+//        arguments = listOf(
+//            navArgument("query") {
+//                type = NavType.StringType
+//                defaultValue = ""
+//                nullable = true
+//            }
+//        )
+//    ) { backStackEntry ->
+//        val query = backStackEntry.arguments?.getString("query") ?: ""
+//        SearchScreen(
+//            navController = navController,
+//            initialQuery = query,
+//            onNavigateBack = {
+//                navController.popBackStack()
+//            },
+//            onVideoClick = { videoId ->
+//                navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId))
+//            }
+//        )
+//    }
 
-    composable(
-        route = "${NavigationRoutes.OtherRoute.Search.route}?query={query}",
-        arguments = listOf(
-            navArgument("query") {
-                type = NavType.StringType
-                defaultValue = ""
-                nullable = true
-            }
-        )
-    ) { backStackEntry ->
-        val query = backStackEntry.arguments?.getString("query") ?: ""
-        SearchScreen(
-            navController = navController,
-            initialQuery = query,
-            onNavigateBack = {
-                navController.popBackStack()
-            },
-            onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId))
-            }
-        )
-    }
-
-    // 版本更新页面
-    composable(NavigationRoutes.OtherRoute.AppUpdate.route) {
-        AppUpdateScreen(
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
-    }
+//    // 版本更新页面
+//    composable(NavigationRoutes.OtherRoute.AppUpdate.route) {
+//        AppUpdateScreen(
+//            onNavigateBack = {
+//                navController.popBackStack()
+//            }
+//        )
+//    }
 
     composable(NavigationRoutes.OtherRoute.PhotoPublish.route) {
         PhotoPublishScreen(
@@ -207,6 +222,30 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
             }
         )
     }
+
+
+    composable(
+        route = NavigationRoutes.OtherRoute.UserHome.route,
+        arguments = listOf(
+            navArgument("username") { type = NavType.StringType; nullable = true }
+        )
+    ) { backStackEntry ->
+        val username = backStackEntry.arguments?.getString("username")
+        if (username != null) {
+            UserHomeScreen(
+                userName = username,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                navController = navController,
+            )
+        }else{
+            Text("Error: UserName is missing. Cannot display Home.")
+        }
+    }
+
+
+
 
     composable(
         route = NavigationRoutes.OtherRoute.UserStoryDetail.route,

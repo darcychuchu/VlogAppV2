@@ -12,16 +12,12 @@ data class CommentEntity(
     val isTyped: Int?, // Consider if this is related to commentType or a different flag
     @ColumnInfo(index = true)
     val quoteId: String, // Made non-null
-    @ColumnInfo(index = true)
-    val commentType: String, // Added
-    val videoId: String?, // Added as nullable, for potential direct video association or legacy
     val parentId: String?,
     val title: String?,
     val description: String?,
     val createdBy: String?,
     val nickName: String?,
     val avatar: String?,
-
     var lastRefreshed: Long? // Timestamp for caching logic
 )
 
@@ -33,8 +29,6 @@ fun Comments.toEntity(): CommentEntity {
         createdAt = this.createdAt,
         isTyped = this.isTyped,
         quoteId = this.quoteId, // This is now non-null in Comments domain model
-        commentType = this.commentType, // This is now non-null in Comments domain model
-        videoId = this.videoId, // videoId from domain is directly mapped
         parentId = this.parentId,
         title = this.title,
         description = this.description,
@@ -52,8 +46,6 @@ fun CommentEntity.toDomain(): Comments {
         createdAt = this.createdAt,
         isTyped = this.isTyped,
         quoteId = this.quoteId, // Non-null in entity
-        commentType = this.commentType, // Non-null in entity
-        videoId = this.videoId, // Mapped from entity
         parentId = this.parentId,
         title = this.title,
         description = this.description,

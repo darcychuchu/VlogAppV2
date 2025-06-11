@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.comments.CommentRepository
 import com.vlog.app.data.comments.Comments
 import com.vlog.app.data.database.Resource
+import com.vlog.app.data.histories.watch.WatchHistoryEntity
 import com.vlog.app.data.histories.watch.WatchHistoryRepository
 import com.vlog.app.data.users.UserSessionManager // Added UserSessionManager import
 import com.vlog.app.data.videos.VideoRepository
@@ -14,7 +15,6 @@ import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.data.videos.toVideos
-import com.vlog.app.navigation.NavigationRoutes.OtherRoute.WatchHistory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -539,7 +539,7 @@ data class VideoDetailUiState(
     val isLoadingComments: Boolean = false,
     val isLoadingRecommendations: Boolean = false,
     val error: String? = null,
-    val watchHistory: WatchHistory? = null, // 观看历史
+    val watchHistory: WatchHistoryEntity? = null, // 观看历史
     val lastPlayedPosition: Long = 0, // 上次播放位置
     val comments: List<Comments> = emptyList(), // 评论列表
     val recommendedVideos: List<Videos> = emptyList(), // 推荐视频列表

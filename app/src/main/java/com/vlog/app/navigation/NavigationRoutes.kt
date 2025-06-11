@@ -43,17 +43,17 @@ object NavigationRoutes {
 
     // 其他导航路由
     sealed class OtherRoute(val route: String) {
-        object Search : OtherRoute("search?query={query}") {
-            fun createRoute(query: String = ""): String {
-                return if (query.isNotBlank()) {
-                    "search?query=${query.encodeUrl()}"
-                } else {
-                    "search"
-                }
-            }
-        }
-        object WatchHistory : OtherRoute("watch_history")
-        object AppUpdate : OtherRoute("app_update")
+//        object Search : OtherRoute("search?query={query}") {
+//            fun createRoute(query: String = ""): String {
+//                return if (query.isNotBlank()) {
+//                    "search?query=${query.encodeUrl()}"
+//                } else {
+//                    "search"
+//                }
+//            }
+//        }
+//        object WatchHistory : OtherRoute("watch_history")
+//        object AppUpdate : OtherRoute("app_update")
         object PhotoPublish : OtherRoute("photo_publish")
 
         // 发布相关页面

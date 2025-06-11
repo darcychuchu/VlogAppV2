@@ -48,7 +48,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SystemUpdate
-import androidx.compose.material3.* // Ensure all M3 components are imported
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -57,6 +56,7 @@ import coil.request.ImageRequest
 @Composable
 fun ProfileUserScreen(
     navController: NavController,
+    onNavigateToLogin: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isLoggedIn by profileViewModel.isLoggedIn.collectAsState()
@@ -76,7 +76,7 @@ fun ProfileUserScreen(
                 },
                 actions = {
                     if (isLoggedIn) {
-                        IconButton(onClick = { navController.navigate(ProfileScreen.Settings.route) }) {
+                        IconButton(onClick = {  }) {
                             Icon(
                                 imageVector = Icons.Filled.Menu,
                                 contentDescription = "Settings"
@@ -91,14 +91,15 @@ fun ProfileUserScreen(
             if (isLoggedIn) {
                 ProfileLoggedInContent(navController = navController, viewModel = profileViewModel)
             } else {
-                ProfileLoggedOutContent(navController = navController)
+                ProfileLoggedOutContent(navController = navController,onNavigateToLogin = onNavigateToLogin)
             }
         }
     }
 }
 
 @Composable
-fun ProfileLoggedOutContent(navController: NavController) {
+fun ProfileLoggedOutContent(navController: NavController,
+                            onNavigateToLogin: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -115,7 +116,7 @@ fun ProfileLoggedOutContent(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
         Text("您尚未登录", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { navController.navigate(NavigationRoutes.OtherRoute.Login.route) }) {
+        Button(onClick = { onNavigateToLogin }) {
             Text("登录 / 注册")
         }
         Spacer(modifier = Modifier.height(32.dp))
@@ -123,17 +124,17 @@ fun ProfileLoggedOutContent(navController: NavController) {
         SettingsNavigationItem(
             icon = Icons.Outlined.History,
             text = "观看历史",
-            onClick = { navController.navigate(NavigationRoutes.OtherRoute.WatchHistory.route) }
+            onClick = { navController.navigate(ProfileScreenRoute.WatchHistory.route) }
         )
         SettingsNavigationItem(
             icon = Icons.Outlined.Search,
             text = "搜索历史",
-            onClick = { navController.navigate(NavigationRoutes.OtherRoute.Search.createRoute()) }
+            onClick = { navController.navigate(ProfileScreenRoute.Search.createRoute()) }
         )
         SettingsNavigationItem(
             icon = Icons.Outlined.SystemUpdate,
             text = "版本更新",
-            onClick = { navController.navigate(NavigationRoutes.OtherRoute.AppUpdate.route) }
+            onClick = { navController.navigate(ProfileScreenRoute.AppUpdate.route) }
         )
     }
 }
@@ -204,8 +205,12 @@ fun ProfileLoggedInContent(navController: NavController, viewModel: ProfileViewM
                 .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatItem(count = followerCount, label = "粉丝", onClick = { navController.navigate(ProfileScreen.Followers.route) })
-            StatItem(count = followingCount, label = "关注", onClick = { navController.navigate(ProfileScreen.Following.route) })
+            StatItem(count = followerCount, label = "粉丝", onClick = {
+                //navController.navigate(ProfileScreen.Followers.route)
+            })
+            StatItem(count = followingCount, label = "关注", onClick = {
+                //navController.navigate(ProfileScreen.Following.route)
+            })
             StatItem(count = currentUser?.points ?: 0, label = "积分", onClick = { /* Optional: Navigate to points screen */ })
         }
 
