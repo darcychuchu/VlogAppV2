@@ -46,12 +46,14 @@ fun CommonBottomBar(
                             }
                         } else {
                             navController.navigate(NavigationRoutes.OtherRoute.Login.route) {
-                                // Optional: popUpTo and launchSingleTop for Login route if needed
-                                // popUpTo(navController.graph.findStartDestination().id)
-                                // launchSingleTop = true
+                                launchSingleTop = true
                             }
                         }
                     } else {
+                        // Logic for Home, Videos, Favorites, Profile
+                        if (navController.currentDestination?.route == NavigationRoutes.OtherRoute.Login.route) {
+                            navController.popBackStack()
+                        }
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
