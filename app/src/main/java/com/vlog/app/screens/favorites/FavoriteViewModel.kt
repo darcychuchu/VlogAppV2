@@ -6,11 +6,15 @@ import com.vlog.app.data.favorites.FavoriteRepository
 import com.vlog.app.data.favorites.FavoritesEntity
 import com.vlog.app.data.favorites.FavoritesWithVideo
 import com.vlog.app.data.users.UserSessionManager
+import com.vlog.app.screens.users.UserViewModel // Added UserViewModel import
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest // Added for flatMapLatest
+import kotlinx.coroutines.flow.flowOf // Added for flowOf
+import kotlinx.coroutines.flow.map // Added for map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,54 +22,86 @@ import javax.inject.Inject
 @HiltViewModel
 class FavoriteViewModel @Inject constructor(
     private val favoriteRepository: FavoriteRepository,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val userViewModel: UserViewModel // Injected UserViewModel
 ) : ViewModel() {
-    
+
     // UI状态
     private val _uiState = MutableStateFlow(FavoriteUiState())
     val uiState: StateFlow<FavoriteUiState> = _uiState.asStateFlow()
-    
+
+    // Event for signaling login requirement
+    private val _loginRequiredEvent = MutableStateFlow<Boolean>(false)
+    val loginRequiredEvent: StateFlow<Boolean> = _loginRequiredEvent.asStateFlow()
+
+    val isLoggedIn: StateFlow<Boolean> = userViewModel.currentUser
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), userSessionManager.isLoggedIn())
+
     // 订阅列表（不包含关联视频信息）
-    val favorites: StateFlow<List<FavoritesEntity>> = favoriteRepository.getAllFavoriteVideos()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-    
+    val favorites: StateFlow<List<FavoritesEntity>> = isLoggedIn.flatMapLatest { loggedIn ->
+        if (loggedIn) {
+            favoriteRepository.getAllFavoriteVideos()
+        } else {
+            flowOf(emptyList())
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     // 订阅视频详细数据（包含关联视频信息）
-    val favoriteVideosWithVideo: StateFlow<List<FavoritesWithVideo>> = favoriteRepository.getAllFavoriteVideosWithVideo()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-    
+    val favoriteVideosWithVideo: StateFlow<List<FavoritesWithVideo>> = isLoggedIn.flatMapLatest { loggedIn ->
+        if (loggedIn) {
+            favoriteRepository.getAllFavoriteVideosWithVideo()
+        } else {
+            flowOf(emptyList())
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     // 订阅数量
-    val favoriteCount: StateFlow<Int> = favoriteRepository.getFavoriteVideoCountFlow()
+    val favoriteCount: StateFlow<Int> = isLoggedIn.flatMapLatest { loggedIn ->
+        if (loggedIn) {
+            favoriteRepository.getFavoriteVideoCountFlow()
+        } else {
+            flowOf(0) // Return 0 count if not logged in
+        }
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0
         )
-    
+
     /**
      * 从服务器同步订阅列表到本地数据库
      */
     fun syncFavoritesFromServer() {
-        val currentUser = userSessionManager.getUser()
-        if (currentUser?.name == null || currentUser.accessToken == null) {
+        // ViewModel's isLoggedIn StateFlow will ensure this doesn't run if not logged in,
+        // but an early return here is still good practice if called directly.
+        if (!isLoggedIn.value) {
             _uiState.value = _uiState.value.copy(
-                error = "请先登录",
+                error = "请先登录才能同步订阅", // More specific message
                 isLoading = false
             )
             return
         }
-        
+        val currentUser = userSessionManager.getUser() // Should not be null if isLoggedIn is true
+        if (currentUser?.name == null || currentUser.accessToken == null) {
+             // This case should ideally not be reached if isLoggedIn is true and derived from currentUser
+            _uiState.value = _uiState.value.copy(error = "用户信息不完整", isLoading = false)
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            
-            favoriteRepository.syncFavoritesFromServer(currentUser.name!!, currentUser.accessToken!!)
+
+            favoriteRepository.syncFavoritesFromServer(currentUser.name, currentUser.accessToken)
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -87,13 +123,17 @@ class FavoriteViewModel @Inject constructor(
      */
     fun addToFavorites(videoId: String, onResult: (Boolean, String?) -> Unit) {
         val currentUser = userSessionManager.getUser()
+        // Check if user is logged in by checking if critical user details are missing.
+        // userSessionManager.isLoggedIn() would be cleaner if available and consistently implemented.
         if (currentUser?.name == null || currentUser.accessToken == null) {
-            onResult(false, "请先登录")
+            userViewModel.setPendingSubscription(videoId)
+            _loginRequiredEvent.value = true
+            onResult(false, "请先登录") // Existing callback for immediate UI feedback
             return
         }
         
         viewModelScope.launch {
-            favoriteRepository.createFavorite(videoId, currentUser.name!!, currentUser.accessToken!!)
+            favoriteRepository.createFavorite(videoId, currentUser.name, currentUser.accessToken)
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(
                         lastUpdateMessage = "订阅成功"
@@ -154,6 +194,10 @@ class FavoriteViewModel @Inject constructor(
      */
     fun clearUpdateMessage() {
         _uiState.value = _uiState.value.copy(lastUpdateMessage = null)
+    }
+
+    fun consumeLoginRequiredEvent() {
+        _loginRequiredEvent.value = false
     }
 }
 

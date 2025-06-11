@@ -24,14 +24,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.data.videos.toVideos
+import com.vlog.app.navigation.NavigationRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
+    navController: NavController, // Added NavController
     onNavigateBack: () -> Unit,
     onVideoClick: (String) -> Unit,
     viewModel: FavoriteViewModel = hiltViewModel()
@@ -39,14 +42,15 @@ fun FavoritesScreen(
     val uiState by viewModel.uiState.collectAsState()
     val favoriteVideosWithVideo by viewModel.favoriteVideosWithVideo.collectAsState()
     val favoriteCount by viewModel.favoriteCount.collectAsState()
-    
-    // 初始同步数据
-    LaunchedEffect(Unit) {
-        viewModel.syncFavoritesFromServer()
-    }
-    
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
-    
+    // 初始同步数据 - only if logged in
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            viewModel.syncFavoritesFromServer()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -101,132 +105,159 @@ fun FavoritesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // 错误信息显示
-            uiState.error?.let { error ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Text(
-                        text = error,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-            
-            // 更新成功消息
-            uiState.lastUpdateMessage?.let { message ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-            
-            // 加载状态
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(32.dp)
-                    )
-                }
-            }
-            
-            // 订阅视频列表
-            when {
-                favoriteVideosWithVideo.isEmpty() && !uiState.isLoading -> {
-                    // 空状态
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+            if (isLoggedIn) {
+                // Logged In View
+                // 错误信息显示
+                uiState.error?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "暂无订阅视频",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "去视频详情页面订阅你喜欢的视频吧",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = error,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
                     }
                 }
-                
-                else -> {
-                    // 视频列表
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+
+                // 更新成功消息
+                uiState.lastUpdateMessage?.let { message ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     ) {
-                        // 统计信息
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
+                        Text(
+                            text = message,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                // 加载状态
+                if (uiState.isLoading && favoriteVideosWithVideo.isEmpty()) { // Show full screen loading only if list is empty
+                    Box(
+                        modifier = Modifier.fillMaxSize(), // Changed to fillMaxSize for centered loading
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                // 订阅视频列表
+                when {
+                    favoriteVideosWithVideo.isEmpty() && !uiState.isLoading -> {
+                        // Empty state when logged in
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                Icon(
+                                    imageVector = Icons.Default.FavoriteBorder, // Changed icon for empty state
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "暂无订阅视频",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "去视频详情页面订阅你喜欢的视频吧",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    else -> {
+                        // Video list
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Statistics
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
                                 ) {
-                                    Text(
-                                        text = "共订阅 ${favoriteCount} 个视频",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Medium
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "共订阅 ${favoriteCount} 个视频",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Video card list
+                            items(favoriteVideosWithVideo) { favoriteWithVideo ->
+                                favoriteWithVideo.video?.let { video ->
+                                    FavoriteVideoCard(
+                                        video = video.toVideos(),
+                                        onClick = { onVideoClick(video.id) },
+                                        onRemoveFavorite = {
+                                            viewModel.removeFromFavorites(video.id!!) { _, _ ->
+                                                // Room will auto-update the Flow
+                                            }
+                                        }
                                     )
                                 }
                             }
                         }
-                        
-                        // 视频卡片列表
-                        items(favoriteVideosWithVideo) { favoriteWithVideo ->
-                            favoriteWithVideo.video?.let { video ->
-                                FavoriteVideoCard(
-                                    video = video.toVideos(),
-                                    onClick = { onVideoClick(video.id) },
-                                    onRemoveFavorite = {
-                                        viewModel.removeFromFavorites(video.id!!) { success, message ->
-                                            // 不需要手动重新加载，Room会自动更新Flow
-                                        }
-                                    }
-                                )
-                            }
-                        }
+                    }
+                }
+            } else {
+                // Not Logged In View
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FavoriteBorder,
+                        contentDescription = "Login to see favorites",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "请登录后查看您的订阅",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { navController.navigate(NavigationRoutes.OtherRoute.Login.route) }) {
+                        Text("登录")
                     }
                 }
             }

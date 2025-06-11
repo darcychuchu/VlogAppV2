@@ -43,6 +43,10 @@ class UserViewModel @Inject constructor(
     // 当前用户
     val currentUser = userDataRepository.currentUser
 
+    // Pending Subscription State
+    private val _pendingSubscriptionVideoId = MutableStateFlow<String?>(null)
+    val pendingSubscriptionVideoId: StateFlow<String?> = _pendingSubscriptionVideoId
+
     init {
         // 初始化时加载当前用户信息
         viewModelScope.launch {
@@ -262,6 +266,21 @@ class UserViewModel @Inject constructor(
      */
     fun deductPoints(points: Int): Boolean {
         return userDataRepository.deductPoints(points)
+    }
+
+    // Methods for pending subscription
+    fun setPendingSubscription(videoId: String) {
+        _pendingSubscriptionVideoId.value = videoId
+    }
+
+    fun clearPendingSubscription() {
+        _pendingSubscriptionVideoId.value = null
+    }
+
+    fun consumePendingSubscription(): String? {
+        val videoId = _pendingSubscriptionVideoId.value
+        _pendingSubscriptionVideoId.value = null
+        return videoId
     }
 }
 

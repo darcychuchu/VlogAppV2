@@ -37,9 +37,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.vlog.app.data.videos.Videos
+import com.vlog.app.navigation.NavigationRoutes // Added for login navigation
 import com.vlog.app.screens.favorites.FavoriteViewModel
 
 // 视频项组件
@@ -47,6 +49,7 @@ import com.vlog.app.screens.favorites.FavoriteViewModel
 fun VideoItem(
     video: Videos,
     onClick: () -> Unit,
+    navController: NavController, // Added NavController
     modifier: Modifier = Modifier,
     favoriteViewModel: FavoriteViewModel = hiltViewModel()
 ) {
@@ -54,8 +57,17 @@ fun VideoItem(
     val favorites by favoriteViewModel.favorites.collectAsState()
 
     val isFavorite by favoriteViewModel.isVideoFavoriteFlow(video.id ?: "").collectAsState(initial = false)
+    val loginRequired by favoriteViewModel.loginRequiredEvent.collectAsState()
 
     var showMessage by remember { mutableStateOf<String?>(null) }
+
+    // Handle login required event
+    LaunchedEffect(loginRequired) {
+        if (loginRequired) {
+            navController.navigate(NavigationRoutes.OtherRoute.Login.route)
+            favoriteViewModel.consumeLoginRequiredEvent()
+        }
+    }
 
     // 显示操作结果消息
     LaunchedEffect(favoriteUiState.lastUpdateMessage) {

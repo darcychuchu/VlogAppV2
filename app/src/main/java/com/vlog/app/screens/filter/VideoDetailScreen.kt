@@ -51,6 +51,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.util.Log
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
@@ -60,6 +61,8 @@ import com.vlog.app.navigation.NavigationRoutes // Added for login navigation
 import com.vlog.app.screens.components.CommentSection
 import com.vlog.app.screens.components.RecommendedVideos
 import com.vlog.app.screens.favorites.FavoriteViewModel
+import com.vlog.app.screens.users.UserViewModel // Added UserViewModel import
+import kotlinx.coroutines.flow.map // Added for map operator
 
 
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -70,7 +73,8 @@ fun VideoDetailScreen(
     navController: NavController,
     viewModel: VideoDetailViewModel = hiltViewModel(),
     playerViewModel: VideoPlayerViewModel = hiltViewModel(),
-    favoriteViewModel: FavoriteViewModel = hiltViewModel()
+    favoriteViewModel: FavoriteViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel() // Instantiated UserViewModel
 ) {
 
     val playerUiState by playerViewModel.uiState.collectAsState()
@@ -78,6 +82,29 @@ fun VideoDetailScreen(
 
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val loginRequiredForFavorite by favoriteViewModel.loginRequiredEvent.collectAsState() // Renamed for clarity
+    val isLoggedIn by userViewModel.currentUser.map { it != null }.collectAsState(initial = userViewModel.isLoggedIn())
+
+    // Handle login required event for favoriting from this screen
+    LaunchedEffect(loginRequiredForFavorite) {
+        if (loginRequiredForFavorite) {
+            navController.navigate(NavigationRoutes.OtherRoute.Login.route)
+            favoriteViewModel.consumeLoginRequiredEvent()
+        }
+    }
+
+    // Effect to consume pending subscription after login
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            val pendingVideoId = userViewModel.consumePendingSubscription()
+            if (pendingVideoId != null) {
+                favoriteViewModel.addToFavorites(pendingVideoId) { success, message ->
+                    Log.d("VideoDetailScreen", "Processed pending subscription for $pendingVideoId: Success=$success, Msg=$message")
+                    // Optionally show a brief toast or snackbar here
+                }
+            }
+        }
+    }
 
     // 显示服务商和播放列表整合对话框
     if (uiState.showGatherAndPlayerDialog) {
