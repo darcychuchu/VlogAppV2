@@ -8,6 +8,7 @@ import com.vlog.app.data.comments.CommentRepository
 import com.vlog.app.data.comments.Comments
 import com.vlog.app.data.database.Resource
 import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.users.UserSessionManager // Added UserSessionManager import
 import com.vlog.app.data.videos.VideoRepository
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
@@ -31,7 +32,8 @@ import javax.inject.Inject
 class VideoDetailViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
     private val watchHistoryRepository: WatchHistoryRepository,
-    private val commentRepository: CommentRepository, // Added CommentRepository
+    private val commentRepository: CommentRepository,
+    private val userSessionManager: UserSessionManager, // Injected UserSessionManager
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -373,8 +375,11 @@ class VideoDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            commentRepository.getComments(videoId = videoId, forceRefresh = forceRefresh)
-                .collectLatest { resource ->
+            commentRepository.getComments(
+                quoteId = videoId,
+                commentType = CommentRepository.TYPE_VIDEO,
+                forceRefresh = forceRefresh
+            ).collectLatest { resource ->
                     _uiState.update { currentState ->
                         when (resource) {
                             is Resource.Loading -> currentState.copy(isLoadingComments = true)
@@ -411,8 +416,12 @@ class VideoDetailViewModel @Inject constructor(
         viewModelScope.launch {
             // Simple loading state using isLoadingComments for now
             _uiState.update { it.copy(isLoadingComments = true, error = null) }
-            commentRepository.postComment(videoId = videoId, content = content)
-                .collectLatest { resource ->
+            commentRepository.postComment(
+                quoteId = videoId,
+                commentType = CommentRepository.TYPE_VIDEO,
+                title = null, // Assuming title is not used for video comments or is optional
+                description = content
+            ).collectLatest { resource ->
                     when (resource) {
                         is Resource.Loading -> {
                             // Handled by the initial update before collect if simple loading is used
@@ -514,6 +523,8 @@ class VideoDetailViewModel @Inject constructor(
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
     }
+
+    fun isUserLoggedIn(): Boolean = userSessionManager.isLoggedIn()
 }
 
 data class VideoDetailUiState(

@@ -20,133 +20,152 @@ class CommentRepository @Inject constructor(
     companion object {
         private const val TAG = "CommentRepository"
         private const val CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000L // 24 hours
+        const val TYPE_VIDEO = "VIDEO"
+        const val TYPE_STORY = "STORY"
     }
 
     fun getComments(
-        videoId: String,
-        forceRefresh: Boolean = false // page and pageSize parameters removed
+        quoteId: String,
+        commentType: String,
+        forceRefresh: Boolean = false
     ): Flow<Resource<List<Comments>>> = flow {
         emit(Resource.Loading())
+        Log.d(TAG, "getComments called for quoteId: $quoteId, type: $commentType, forceRefresh: $forceRefresh")
 
         val initialLocalComments = try {
-            commentDao.getCommentsByVideoId(videoId).firstOrNull()?.map { it.toDomain() } ?: emptyList()
+            commentDao.getCommentsByQuoteIdAndType(quoteId, commentType).firstOrNull()?.map { it.toDomain() } ?: emptyList()
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading initial local comments: ${e.message}", e)
+            Log.e(TAG, "Error reading initial local comments for $quoteId ($commentType): ${e.message}", e)
             emptyList<Comments>()
         }
 
         val oldestTimestamp = try {
-            commentDao.getOldestCommentRefreshTimestamp(videoId)
+            commentDao.getOldestCommentRefreshTimestamp(quoteId, commentType)
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting oldest timestamp: ${e.message}", e)
+            Log.e(TAG, "Error getting oldest timestamp for $quoteId ($commentType): ${e.message}", e)
             null
         }
 
         val initialCommentCount = try {
-            commentDao.getCommentCountByVideoId(videoId)
+            commentDao.getCommentCountByQuoteIdAndType(quoteId, commentType)
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting initial comment count: ${e.message}", e)
+            Log.e(TAG, "Error getting initial comment count for $quoteId ($commentType): ${e.message}", e)
             0
         }
 
         val isCacheExpired = oldestTimestamp == null || (System.currentTimeMillis() - oldestTimestamp > CACHE_EXPIRY_MS)
-        // Fetch if forced, or cache expired, or if there are no comments locally (implies initial load for this video)
         val needsFetch = forceRefresh || isCacheExpired || initialCommentCount == 0
 
         if (needsFetch) {
-            Log.d(TAG, "Fetching all comments for videoId: $videoId. Reason: forceRefresh=$forceRefresh, isCacheExpired=$isCacheExpired, initialCommentCount=$initialCommentCount")
-            // Call updated service method (no pagination)
-            val networkResult = safeApiCall { commentService.getComments(videoId).data }
+            Log.d(TAG, "Fetching comments for $quoteId ($commentType). Reason: forceRefresh=$forceRefresh, isCacheExpired=$isCacheExpired, initialCommentCount=$initialCommentCount")
+
+            val networkResult = safeApiCall {
+                when (commentType) {
+                    TYPE_VIDEO -> commentService.getComments(videoId = quoteId).data
+                    TYPE_STORY -> commentService.getStoryComments(storyId = quoteId).data
+                    else -> throw IllegalArgumentException("Unknown commentType: $commentType")
+                }
+            }
 
             if (networkResult.isSuccess) {
-                val networkComments = networkResult.getOrNull()
+                var networkComments = networkResult.getOrNull()
                 if (networkComments != null) {
-                    Log.d(TAG, "Successfully fetched ${networkComments.size} comments from network.")
-                    // Always delete existing comments for the video before inserting the new full list
-                    Log.d(TAG, "Deleting existing comments for videoId: $videoId before inserting fresh list.")
+                    // Populate quoteId and commentType in each comment from network before saving
+                    networkComments = networkComments.map { comment ->
+                        // The 'Comments' domain object now requires quoteId and commentType in constructor.
+                        // Assuming API response for Comments does not include these, we must add them.
+                        // If API *does* include them, this explicit mapping might be redundant but safe.
+                        comment.copy(
+                            quoteId = quoteId, // Ensure this is set from the context
+                            commentType = commentType // Ensure this is set from the context
+                        )
+                    }
+                    Log.d(TAG, "Successfully fetched ${networkComments.size} comments from network for $quoteId ($commentType).")
+                    Log.d(TAG, "Deleting existing comments for $quoteId ($commentType) before inserting fresh list.")
                     try {
-                        commentDao.deleteCommentsByVideoId(videoId)
+                        commentDao.deleteCommentsByQuoteIdAndType(quoteId, commentType)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error deleting comments by videoId: $videoId", e)
-                        // Decide if we should proceed if delete fails. For now, we will.
+                        Log.e(TAG, "Error deleting comments for $quoteId ($commentType): ${e.message}", e)
                     }
 
                     try {
-                        val commentEntities = networkComments.map { it.toEntity(videoId) }
+                        // Comments.toEntity() now uses quoteId and commentType from the Comments object itself
+                        val commentEntities = networkComments.map { it.toEntity() }
                         commentDao.insertAll(commentEntities)
                     } catch (e: Exception) {
-                         Log.e(TAG, "Error inserting comments for videoId: $videoId", e)
+                         Log.e(TAG, "Error inserting comments for $quoteId ($commentType): ${e.message}", e)
                     }
 
-                    // Fetch the newly inserted comments to ensure UI gets the most up-to-date list from DB
                     val updatedLocalComments = try {
-                        commentDao.getCommentsByVideoId(videoId).firstOrNull()?.map { it.toDomain() } ?: emptyList()
+                        commentDao.getCommentsByQuoteIdAndType(quoteId, commentType).firstOrNull()?.map { it.toDomain() } ?: emptyList()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error reading updated local comments: ${e.message}", e)
-                        // If read fails, we could emit networkComments mapped to domain, or initialLocalComments as a fallback
-                        networkComments.map { it } // Prefer to show what we got from network if DB fails after insert
+                        Log.e(TAG, "Error reading updated local comments for $quoteId ($commentType): ${e.message}", e)
+                        networkComments // Prefer to show what we got from network if DB fails after insert
                     }
-                    Log.d(TAG, "Emitting Resource.Success with ${updatedLocalComments.size} comments from DB.")
+                    Log.d(TAG, "Emitting Resource.Success with ${updatedLocalComments.size} comments from DB for $quoteId ($commentType).")
                     emit(Resource.Success(updatedLocalComments))
-                } else { // Network call successful but data is null (e.g. API returns success with empty body for no comments)
-                    Log.w(TAG, "Network call successful but no comment data received (data is null).")
-                    // This means there are no comments for this video on the server.
-                    // Clear local cache as well.
+                } else {
+                    Log.w(TAG, "Network call successful but no comment data received for $quoteId ($commentType).")
                     try {
-                        commentDao.deleteCommentsByVideoId(videoId)
+                        commentDao.deleteCommentsByQuoteIdAndType(quoteId, commentType)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error deleting comments by videoId: $videoId after null network response", e)
+                        Log.e(TAG, "Error deleting comments for $quoteId ($commentType) after null network response", e)
                     }
                     emit(Resource.Success(emptyList()))
                 }
-            } else { // Network call failed
-                val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error fetching comments"
+            } else {
+                val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error fetching comments for $quoteId ($commentType)"
                 Log.e(TAG, "API Error fetching comments: $errorMsg")
-                // Emit error but provide existing local comments if available (stale data)
                 emit(Resource.Error(errorMsg, initialLocalComments))
             }
-        } else { // Cache is valid and not forced refresh
-            Log.d(TAG, "Cache valid for videoId: $videoId. Emitting local comments: ${initialLocalComments.size}")
+        } else {
+            Log.d(TAG, "Cache valid for $quoteId ($commentType). Emitting local comments: ${initialLocalComments.size}")
             emit(Resource.Success(initialLocalComments))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun postComment(videoId: String, title: String?, description: String): Flow<Resource<String>> = flow {
+    fun postComment(
+        quoteId: String,
+        commentType: String,
+        title: String?,
+        description: String
+    ): Flow<Resource<String>> = flow {
         emit(Resource.Loading())
-        Log.d(TAG, "Posting comment for videoId: $videoId, content: '$description'")
+        Log.d(TAG, "Posting comment for $quoteId ($commentType), title: '$title', description: '$description'")
 
-        // Assuming safeApiCall handles ApiResponse and extracts .data
-        val networkResult = safeApiCall { commentService.postComment(videoId, title, description) }
+        val networkResult = safeApiCall {
+            when (commentType) {
+                TYPE_VIDEO -> commentService.postComment(videoId = quoteId, title = title, description = description)
+                TYPE_STORY -> commentService.postStoryComment(storyId = quoteId, title = title, description = description)
+                else -> throw IllegalArgumentException("Unknown commentType: $commentType")
+            }
+        }
 
         if (networkResult.isSuccess) {
-            val postedComment = networkResult.getOrNull()
-            if (postedComment != null) {
-                Log.d(TAG, "Successfully posted comment. API returned: $postedComment")
+            var postedCommentApiResponse = networkResult.getOrNull() // This is ApiResponse<Comments>
+            if (postedCommentApiResponse != null && postedCommentApiResponse.data != null) {
+                 var postedComment = postedCommentApiResponse.data!! // This is Comments object
+                Log.d(TAG, "Successfully posted comment for $quoteId ($commentType). API returned: $postedComment")
                 try {
-                    // Add to local database
-                    //val commentEntity = postedComment.toEntity(videoId)
-                    // postedComment.toEntity(videoId) should set lastRefreshed via System.currentTimeMillis()
-                    //commentDao.insertAll(listOf(commentEntity))
-                    Log.d(TAG, "Inserted posted comment into local DB.")
-                    emit(Resource.Success(""))
+                    // Populate quoteId and commentType before saving to DB
+                    postedComment = postedComment.copy(
+                        quoteId = quoteId,
+                        commentType = commentType
+                    )
+                    val commentEntity = postedComment.toEntity()
+                    commentDao.insertAll(listOf(commentEntity)) // insertAll expects a List
+                    Log.d(TAG, "Inserted posted comment into local DB for $quoteId ($commentType).")
+                    emit(Resource.Success("Comment posted successfully.")) // Return a meaningful success message
                 } catch (e: Exception) {
-                    Log.e(TAG, "DB Error inserting posted comment: ${e.message}", e)
-                    // API post was successful, but local save failed.
-                    // Emit Success as the primary operation succeeded.
-                    // The local cache will be updated on the next fetch.
-                    emit(Resource.Success(""))
+                    Log.e(TAG, "DB Error inserting posted comment for $quoteId ($commentType): ${e.message}", e)
+                    emit(Resource.Success("Comment posted, local save failed."))
                 }
             } else {
-                // This case might occur if API returns 200 OK but with null data in ApiResponse.data
-                // This could mean the API confirms the post but doesn't return the full object,
-                // or it's an empty list/object response.
-                Log.w(TAG, "Comment posted successfully, but API did not return the comment object or data was null.")
-                // Consider this a success for the operation of posting.
-                // The local cache will update on the next full refresh triggered by the ViewModel.
-                emit(Resource.Success(""))
+                Log.w(TAG, "Comment posted successfully for $quoteId ($commentType), but API did not return the comment object or data was null.")
+                emit(Resource.Success("Comment posted, no confirmation data."))
             }
         } else {
-            val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error posting comment"
+            val errorMsg = networkResult.exceptionOrNull()?.message ?: "Unknown error posting comment for $quoteId ($commentType)"
             Log.e(TAG, "API Error posting comment: $errorMsg")
             emit(Resource.Error(errorMsg, null))
         }

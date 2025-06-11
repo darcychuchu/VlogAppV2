@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.vlog.app.screens.components.VideoItem
 import com.vlog.app.screens.favorites.FavoriteViewModel
 import kotlin.collections.isNotEmpty
@@ -34,6 +35,7 @@ import kotlin.collections.isNotEmpty
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    navController: NavController,
     onNavigateBack: () -> Unit,
     onVideoClick: (String) -> Unit,
     initialQuery: String = "",
@@ -155,6 +157,7 @@ fun SearchScreen(
                 items(searchResults) { video ->
                     VideoItem(
                         video = video,
+                        navController = navController,
                         favoriteViewModel = favoriteViewModel,
                         onClick = { onVideoClick(video.id ?: "") },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)

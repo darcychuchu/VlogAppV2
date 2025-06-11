@@ -61,6 +61,10 @@ object NavigationRoutes {
             fun createRoute(username: String) = "user_home/$username"
         }
 
+        object UserStoryDetail : OtherRoute("user_story_detail/{username}/{storyId}") {
+            fun createRoute(username: String, storyId: String) = "user_story_detail/$username/$storyId"
+        }
+
         // 认证相关页面
         object Login : OtherRoute("login")
         object Register : OtherRoute("register")

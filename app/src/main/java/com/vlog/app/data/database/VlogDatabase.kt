@@ -79,7 +79,7 @@ abstract class VlogDatabase : RoomDatabase() {
                     "vlog_database"
                 )
                     //.addMigrations(MIGRATION_1_2) // Example: Add specific migrations if needed
-                    .fallbackToDestructiveMigration() // Added for schema change handling
+                    //.fallbackToDestructiveMigration() // Added for schema change handling
                     .build()
                 INSTANCE = instance
                 instance

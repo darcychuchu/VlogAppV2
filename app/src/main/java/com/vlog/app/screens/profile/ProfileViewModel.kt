@@ -55,13 +55,14 @@ class ProfileViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val response = storiesRepository.getStoriesList(
-                    name = "",
+                val response = storiesRepository.getUserStoriesList(
+                    name = userName,
+                    0,0,24,0,
                     token = token
                 )
 
                 if (response.code == ApiResponseCode.SUCCESS && response.data != null) {
-                    val newStories: List<Stories>? = response.data
+                    val newStories: List<Stories>? = response.data.items
 
                     // 添加日志
                     Log.d("ProfileViewModel", "获取到动态列表: ${newStories?.size}个")

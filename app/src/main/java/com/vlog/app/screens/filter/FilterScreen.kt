@@ -26,12 +26,11 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import android.util.Log
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.flow.map
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,6 +42,7 @@ import com.vlog.app.screens.components.LoadingView
 import com.vlog.app.navigation.NavigationRoutes
 import com.vlog.app.screens.components.VideoItem
 import com.vlog.app.screens.favorites.FavoriteViewModel
+import com.vlog.app.screens.users.UserViewModel // Added UserViewModel import
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,20 +51,35 @@ fun FilterScreen(
     navController: NavController,
     typed: String? = null,
     viewModel: FilterViewModel = hiltViewModel(),
-    favoriteViewModel: FavoriteViewModel = hiltViewModel()
+    favoriteViewModel: FavoriteViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel() // Instantiated UserViewModel
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    // Derive isLoggedIn state reactively
+    val isLoggedIn by userViewModel.currentUser.map { it != null }.collectAsState(initial = userViewModel.isLoggedIn())
+
+    // Effect to consume pending subscription after login
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            val pendingVideoId = userViewModel.consumePendingSubscription()
+            if (pendingVideoId != null) {
+                favoriteViewModel.addToFavorites(pendingVideoId) { success, message ->
+                    Log.d("FilterScreen", "Processed pending subscription for $pendingVideoId: Success=$success, Msg=$message")
+                    // Optionally show a brief toast or snackbar here
+                }
+            }
+        }
+    }
+
     // 如果有 typed 参数，则设置默认分类
     LaunchedEffect(typed) {
         typed?.toIntOrNull()?.let { categoryId ->
-            // 找到对应的分类项
             val categoryItem = DefaultFilterConfig.categories.items.find { it.id == categoryId.toString() }
             categoryItem?.let {
-                // 更新筛选条件
                 viewModel.updateFilter(DefaultFilterConfig.categories, it)
             }
         }
     }
-    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -132,6 +147,7 @@ fun FilterScreen(
                                 VideoItem(
                                     video = video,
                                     onClick = { navController.navigate("filter_detail/${video.id}") },
+                                    navController = navController, // Pass NavController
                                     favoriteViewModel = favoriteViewModel
                                 )
                             }

@@ -11,13 +11,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.vlog.app.data.users.UserSessionManager
 import com.vlog.app.screens.components.CommonBottomBar
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+
+// ViewModel to hold UserSessionManager, making it easier to inject into Composable
+@HiltViewModel
+class NavigationLayoutViewModel @Inject constructor(
+    val userSessionManager: UserSessionManager
+) : ViewModel()
 
 @Composable
-fun NavigationLayout() {
+fun NavigationLayout(
+    viewModel: NavigationLayoutViewModel = hiltViewModel() // Inject ViewModel
+) {
 
     // 创建导航状态
     val navigationState = rememberNavigationState()
@@ -45,7 +58,8 @@ fun NavigationLayout() {
             // 主导航界面，包含底部导航栏
             ScaffoldLayout(
                 navController = navController,
-                currentDestination = currentDestination
+                currentDestination = currentDestination,
+                userSessionManager = viewModel.userSessionManager
             )
         }
         NavigationType.FULLSCREEN -> {
@@ -74,14 +88,16 @@ fun NavigationLayout() {
 @Composable
 fun ScaffoldLayout(
     navController: NavHostController,
-    currentDestination: NavDestination?
+    currentDestination: NavDestination?,
+    userSessionManager: UserSessionManager // Pass UserSessionManager
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             CommonBottomBar(
                 navController = navController,
-                currentDestination = currentDestination
+                currentDestination = currentDestination,
+                userSessionManager = userSessionManager // Pass to CommonBottomBar
             )
         }
     ) { innerPadding ->

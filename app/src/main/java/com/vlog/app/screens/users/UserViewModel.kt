@@ -43,6 +43,13 @@ class UserViewModel @Inject constructor(
     // 当前用户
     val currentUser = userDataRepository.currentUser
 
+    // Pending Subscription State is now managed by UserDataRepository.
+    // Expose it from UserDataRepository if needed by UI observing UserViewModel directly for this.
+    // However, typically screens needing this would get UserDataRepository or UserViewModel would provide specific methods.
+    // For this refactoring, we assume UserViewModel's methods are the interface.
+    // If direct observation of the StateFlow via UserViewModel is needed, add:
+    // val pendingSubscriptionVideoId: StateFlow<String?> = userDataRepository.pendingSubscriptionVideoId
+
     init {
         // 初始化时加载当前用户信息
         viewModelScope.launch {
@@ -262,6 +269,19 @@ class UserViewModel @Inject constructor(
      */
     fun deductPoints(points: Int): Boolean {
         return userDataRepository.deductPoints(points)
+    }
+
+    // Methods for pending subscription - now delegating to UserDataRepository
+    fun setPendingSubscription(videoId: String) {
+        userDataRepository.setPendingSubscription(videoId)
+    }
+
+    fun clearPendingSubscription() {
+        userDataRepository.clearPendingSubscription()
+    }
+
+    fun consumePendingSubscription(): String? {
+        return userDataRepository.consumePendingSubscription()
     }
 }
 

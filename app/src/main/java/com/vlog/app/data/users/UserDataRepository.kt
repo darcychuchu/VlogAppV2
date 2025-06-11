@@ -18,7 +18,11 @@ class UserDataRepository @Inject constructor(
     // 当前用户
     private val _currentUser = MutableStateFlow<Users?>(userSessionManager.getUser())
     val currentUser: StateFlow<Users?> = _currentUser.asStateFlow()
-    
+
+    // Pending Subscription State
+    private val _pendingSubscriptionVideoId = MutableStateFlow<String?>(null)
+    val pendingSubscriptionVideoId: StateFlow<String?> = _pendingSubscriptionVideoId.asStateFlow()
+
     /**
      * 获取当前用户
      * @return 当前用户，如果未登录则返回null
@@ -80,5 +84,20 @@ class UserDataRepository @Inject constructor(
         _currentUser.value = updatedUser
         userSessionManager.saveUser(updatedUser)
         return true
+    }
+
+    // Methods for pending subscription
+    fun setPendingSubscription(videoId: String) {
+        _pendingSubscriptionVideoId.value = videoId
+    }
+
+    fun clearPendingSubscription() {
+        _pendingSubscriptionVideoId.value = null
+    }
+
+    fun consumePendingSubscription(): String? {
+        val videoId = _pendingSubscriptionVideoId.value
+        _pendingSubscriptionVideoId.value = null
+        return videoId
     }
 }
