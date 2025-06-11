@@ -5,16 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.favorites.FavoriteRepository
 import com.vlog.app.data.favorites.FavoritesEntity
 import com.vlog.app.data.favorites.FavoritesWithVideo
+import com.vlog.app.data.users.UserDataRepository // Changed import
 import com.vlog.app.data.users.UserSessionManager
-import com.vlog.app.screens.users.UserViewModel // Added UserViewModel import
+// Removed: import com.vlog.app.screens.users.UserViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flatMapLatest // Added for flatMapLatest
-import kotlinx.coroutines.flow.flowOf // Added for flowOf
-import kotlinx.coroutines.flow.map // Added for map
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,7 +24,7 @@ import javax.inject.Inject
 class FavoriteViewModel @Inject constructor(
     private val favoriteRepository: FavoriteRepository,
     private val userSessionManager: UserSessionManager,
-    private val userViewModel: UserViewModel // Injected UserViewModel
+    private val userDataRepository: UserDataRepository // Changed to UserDataRepository
 ) : ViewModel() {
 
     // UI状态
@@ -34,7 +35,7 @@ class FavoriteViewModel @Inject constructor(
     private val _loginRequiredEvent = MutableStateFlow<Boolean>(false)
     val loginRequiredEvent: StateFlow<Boolean> = _loginRequiredEvent.asStateFlow()
 
-    val isLoggedIn: StateFlow<Boolean> = userViewModel.currentUser
+    val isLoggedIn: StateFlow<Boolean> = userDataRepository.currentUser // Changed source to userDataRepository
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), userSessionManager.isLoggedIn())
 
@@ -124,9 +125,8 @@ class FavoriteViewModel @Inject constructor(
     fun addToFavorites(videoId: String, onResult: (Boolean, String?) -> Unit) {
         val currentUser = userSessionManager.getUser()
         // Check if user is logged in by checking if critical user details are missing.
-        // userSessionManager.isLoggedIn() would be cleaner if available and consistently implemented.
         if (currentUser?.name == null || currentUser.accessToken == null) {
-            userViewModel.setPendingSubscription(videoId)
+            userDataRepository.setPendingSubscription(videoId) // Changed to userDataRepository
             _loginRequiredEvent.value = true
             onResult(false, "请先登录") // Existing callback for immediate UI feedback
             return
