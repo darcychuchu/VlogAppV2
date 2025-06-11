@@ -50,7 +50,7 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToUserProfile: (String) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    navController: NavController? = null,
+    navController: NavController, // Changed to non-null as it's essential for navigation
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -163,8 +163,14 @@ fun HomeScreen(
                     hasMoreData = hasMoreData,
                     onRefresh = { homeViewModel.refresh() },
                     onLoadMore = { homeViewModel.loadMore() },
-                    onNavigateToUserProfile = onNavigateToUserProfile,
-                    onNavigateToStoryDetail = { userName, storyId -> },
+                    onNavigateToUserProfile = { username ->
+                        // Ensure username is not empty, though createRoute should handle it.
+                        // Using a fallback if necessary, though the calling site (StoryItem) will provide it.
+                        navController.navigate(NavigationRoutes.OtherRoute.UserHome.createRoute(username = username))
+                    },
+                    onNavigateToStoryDetail = { username, storyId ->
+                        navController.navigate(NavigationRoutes.OtherRoute.UserStoryDetail.createRoute(username = username, storyId = storyId))
+                    },
                     onNavigateToArtworkDetail = { userName, artworkId, isPlayerMode -> }
                 )
                 1 -> FollowContent(
@@ -174,8 +180,12 @@ fun HomeScreen(
                     hasMoreData = homeViewModel.followingHasMoreData.collectAsState().value,
                     onRefresh = {  },
                     onLoadMore = {  },
-                    onNavigateToUserProfile = onNavigateToUserProfile,
-                    onNavigateToStoryDetail = { userName, storyId -> },
+                    onNavigateToUserProfile = { username ->
+                        navController.navigate(NavigationRoutes.OtherRoute.UserHome.createRoute(username = username))
+                    },
+                    onNavigateToStoryDetail = { username, storyId ->
+                        navController.navigate(NavigationRoutes.OtherRoute.UserStoryDetail.createRoute(username = username, storyId = storyId))
+                    },
                     onNavigateToArtworkDetail = { userName, artworkId, isPlayerMode -> },
                     isLoggedIn = true
                 )
@@ -216,15 +226,20 @@ fun DiscoverContent(
 
 
                         // 根据isTyped值决定导航到哪个页面
-                        story.id?.let { id ->
-                            story.createdBy?.let { userName ->
-                                onNavigateToStoryDetail(userName, id)
-                            }
+                        // Null checks for id are important.
+                        // Using nickName as primary for username, fallback to createdBy, then "unknown".
+                        val storyId = story.id
+                        val username = story.nickName ?: story.createdBy ?: "unknown"
+                        if (storyId != null) {
+                            onNavigateToStoryDetail(username, storyId)
                         }
-
-
+                        // If storyId is null, onClick does nothing, which is reasonable.
                     },
-                    onUserClick = {  }
+                    onUserClick = {
+                        // Using nickName as primary for username, fallback to createdBy, then "unknown".
+                        val username = story.nickName ?: story.createdBy ?: "unknown"
+                        onNavigateToUserProfile(username)
+                    }
                 )
             }
         }

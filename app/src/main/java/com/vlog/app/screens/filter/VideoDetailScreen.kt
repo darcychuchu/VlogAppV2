@@ -56,6 +56,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.vlog.app.R
 import com.vlog.app.data.videos.Videos
+import com.vlog.app.navigation.NavigationRoutes // Added for login navigation
 import com.vlog.app.screens.components.CommentSection
 import com.vlog.app.screens.components.RecommendedVideos
 import com.vlog.app.screens.favorites.FavoriteViewModel
@@ -305,7 +306,11 @@ fun VideoDetailScreen(
                                                     comments = uiState.comments,
                                                     isLoading = uiState.isLoadingComments,
                                                     onPostComment = { content ->
-                                                        viewModel.postComment(content)
+                                                        if (viewModel.isUserLoggedIn()) {
+                                                            viewModel.postComment(content)
+                                                        } else {
+                                                            navController.navigate(NavigationRoutes.OtherRoute.Login.route)
+                                                        }
                                                     }
                                                 )
                                             }
