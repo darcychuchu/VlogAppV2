@@ -3,7 +3,12 @@ package com.vlog.app.screens.profile
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
@@ -39,14 +44,34 @@ class AppUpdateViewModel @Inject constructor(
     private val _downloadProgress = MutableStateFlow(0)
     val downloadProgress: StateFlow<Int> = _downloadProgress.asStateFlow()
 
+    private var downloadObserver: DownloadProgressObserver? = null
+    private val downloadHandler = Handler(Looper.getMainLooper())
+
     /**
      * 获取当前应用版本信息
      */
     private fun getCurrentVersionInfo(): AppVersionInfo {
-        return AppVersionInfo(
-            versionCode = 1,
-            versionName = APP_VERSION
-        )
+        try {
+            val packageInfo: PackageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val versionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode
+            }
+            val versionName = packageInfo.versionName
+            return AppVersionInfo(
+                versionCode = versionCode,
+                versionName = versionName
+            )
+        } catch (e: Exception) {
+            // Handle exception, perhaps log it or return default values
+            Log.e("AppUpdateViewModel", "Error getting package info", e)
+            return AppVersionInfo(
+                versionCode = 1, // Default or error value
+                versionName = APP_VERSION // Default or error value
+            )
+        }
     }
 
     /**
@@ -165,132 +190,174 @@ class AppUpdateViewModel @Inject constructor(
         }
     }
     
-    // 新增进度监听方法
+    // Refactored to use ContentObserver
     private fun monitorDownloadProgress(downloadId: Long, downloadManager: DownloadManager) {
-        viewModelScope.launch {
-            var downloading = true
-            var retryCount = 0
-            val maxRetries = 300 // 最多重试5分钟
-            
-            Log.d("AppUpdate", "开始监听下载进度，ID: $downloadId")
-            
-            while (downloading && retryCount < maxRetries) {
-                try {
-                    val query = DownloadManager.Query().setFilterById(downloadId)
-                    val cursor = downloadManager.query(query)
-                    
-                    if (cursor.moveToFirst()) {
-                        val bytesDownloaded = cursor.getLong(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                        )
-                        val bytesTotal = cursor.getLong(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                        )
-                        val status = cursor.getInt(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
-                        )
-                        
-                        Log.d("AppUpdate", "下载状态: $status, 已下载: $bytesDownloaded, 总大小: $bytesTotal")
-                        
-                        // 更新进度
-                        if (bytesTotal > 0) {
-                            val progress = ((bytesDownloaded * 100L) / bytesTotal).toInt()
-                            _downloadProgress.value = progress
-                            Log.d("AppUpdate", "下载进度: $progress%")
-                        } else if (bytesDownloaded > 0) {
-                            // 如果总大小未知，但有下载数据，显示不确定进度
-                            val progress = minOf(50 + (retryCount / 6), 90) // 渐进式进度
-                            _downloadProgress.value = progress
-                            Log.d("AppUpdate", "未知总大小，显示进度: $progress%")
-                        }
-                        
-                        when (status) {
-                            DownloadManager.STATUS_SUCCESSFUL -> {
-                                downloading = false
-                                Log.d("AppUpdate", "下载完成")
-                                _uiState.value = _uiState.value.copy(
-                                    isDownloading = false,
-                                    downloadCompleted = true
-                                )
-                                _downloadProgress.value = 100
-                            }
-                            DownloadManager.STATUS_FAILED -> {
-                                downloading = false
-                                val reason = cursor.getInt(
-                                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)
-                                )
-                                Log.e("AppUpdate", "下载失败，错误码: $reason")
-                                val errorMsg = when (reason) {
-                                    DownloadManager.ERROR_CANNOT_RESUME -> "无法恢复下载"
-                                    DownloadManager.ERROR_DEVICE_NOT_FOUND -> "存储设备未找到"
-                                    DownloadManager.ERROR_FILE_ALREADY_EXISTS -> "文件已存在"
-                                    DownloadManager.ERROR_FILE_ERROR -> "文件错误"
-                                    DownloadManager.ERROR_HTTP_DATA_ERROR -> "HTTP数据错误"
-                                    DownloadManager.ERROR_INSUFFICIENT_SPACE -> "存储空间不足"
-                                    DownloadManager.ERROR_TOO_MANY_REDIRECTS -> "重定向次数过多"
-                                    DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> "未处理的HTTP错误码"
-                                    DownloadManager.ERROR_UNKNOWN -> "未知错误"
-                                    else -> "下载失败(错误码: $reason)"
-                                }
-                                _uiState.value = _uiState.value.copy(
-                                    isDownloading = false,
-                                    error = errorMsg
-                                )
-                            }
-                            DownloadManager.STATUS_PAUSED -> {
-                                Log.d("AppUpdate", "下载暂停")
-                            }
-                            DownloadManager.STATUS_PENDING -> {
-                                Log.d("AppUpdate", "下载等待中 - 重试次数: $retryCount")
-                                // 检查网络连接状态
-                                val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-//                                val activeNetwork = connectivityManager.activeNetworkInfo
-//                                Log.d("AppUpdate", "网络状态: ${activeNetwork?.isConnected} - ${activeNetwork?.typeName}")
-                                
-                                // 如果等待时间过长，可能需要重新启动下载
-                                if (retryCount > 30) { // 30秒后
-                                    Log.w("AppUpdate", "下载等待时间过长，可能存在网络问题")
-                                }
-                                
-                                // 保持0%进度，不要设置固定值
-                                _downloadProgress.value = 0
-                            }
-                            DownloadManager.STATUS_RUNNING -> {
-                                Log.d("AppUpdate", "下载进行中")
-                                // 只有在实际有下载数据时才更新进度
-                                // 进度已在上面的逻辑中处理
-                            }
-                        }
-                    } else {
-                        // 查询不到下载任务
-                        downloading = false
-                        Log.e("AppUpdate", "查询不到下载任务")
+        downloadObserver?.let { observer ->
+            context.contentResolver.unregisterContentObserver(observer)
+        }
+        downloadObserver = DownloadProgressObserver(downloadHandler, downloadManager, downloadId)
+
+        // The DownloadManager.COLUMN_URI is not directly the URI for the file,
+        // but rather a content URI that can be observed.
+        // A common practice is to observe the general download URI and filter by ID,
+        // or use getUriForDownloadedFile if you only care about the final file state.
+        // However, getUriForDownloadedFile might return null if the download hasn't completed.
+        // For observing progress, it's better to observe a general URI and filter.
+        // The "content://downloads/my_downloads" is a common URI that works for this.
+        // If this specific URI doesn't work, "content://downloads/all_downloads" can be an alternative.
+        try {
+            val downloadUri = Uri.parse("content://downloads/my_downloads") // General URI for downloads
+            context.contentResolver.registerContentObserver(
+                downloadUri,
+                true,
+                downloadObserver!!
+            )
+            Log.d("AppUpdate", "DownloadProgressObserver registered for ID: $downloadId with URI: $downloadUri")
+        } catch (e: Exception) {
+            Log.e("AppUpdate", "Error registering content observer", e)
+            _uiState.value = _uiState.value.copy(
+                isDownloading = false,
+                error = "无法监听下载进度: ${e.message}"
+            )
+        }
+    }
+
+    private inner class DownloadProgressObserver(
+        handler: Handler,
+        private val downloadManager: DownloadManager,
+        private val downloadId: Long
+    ) : ContentObserver(handler) {
+
+        override fun onChange(selfChange: Boolean) {
+            this.onChange(selfChange, null)
+        }
+
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            // Filter by downloadId if the URI is general
+            if (uri != null && uri.lastPathSegment != null && uri.lastPathSegment != downloadId.toString()) {
+                 // If the notification is for a different downloadId, ignore it.
+                 // This check is more relevant if observing a very broad URI like "content://downloads/all_downloads".
+                 // For "content://downloads/my_downloads", it's often specific enough.
+            }
+
+            val query = DownloadManager.Query().setFilterById(downloadId)
+            val cursor = downloadManager.query(query)
+
+            if (cursor != null && cursor.moveToFirst()) {
+                val statusColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                val totalBytesColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                val downloadedBytesColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                val reasonColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+
+                if (statusColumnIndex == -1 || totalBytesColumnIndex == -1 || downloadedBytesColumnIndex == -1 || reasonColumnIndex == -1) {
+                    Log.e("AppUpdate", "Required column not found in DownloadManager query result.")
+                    cursor.close()
+                    // Potentially unregister observer here if columns are missing, as updates are not possible
+                    // unregister()
+                    // _uiState.value = _uiState.value.copy(isDownloading = false, error = "无法读取下载信息")
+                    return
+                }
+
+                val status = cursor.getInt(statusColumnIndex)
+                val totalBytes = cursor.getLong(totalBytesColumnIndex)
+                val downloadedBytes = cursor.getLong(downloadedBytesColumnIndex)
+
+                Log.d("AppUpdateObserver", "ID $downloadId: Status $status, Bytes $downloadedBytes/$totalBytes")
+
+                if (totalBytes > 0) {
+                    _downloadProgress.value = ((downloadedBytes * 100L) / totalBytes).toInt()
+                } else if (status == DownloadManager.STATUS_RUNNING && downloadedBytes > 0) {
+                     // Indeterminate progress if total size is unknown but bytes are flowing
+                    _downloadProgress.value = -1 // Or some other indicator for indeterminate progress
+                } else if (status == DownloadManager.STATUS_PENDING) {
+                    _downloadProgress.value = 0
+                }
+
+
+                when (status) {
+                    DownloadManager.STATUS_SUCCESSFUL -> {
+                        Log.d("AppUpdateObserver", "ID $downloadId: Download successful")
+                        _downloadProgress.value = 100
                         _uiState.value = _uiState.value.copy(
                             isDownloading = false,
-                            error = "下载任务丢失"
+                            downloadCompleted = true,
+                            error = null
                         )
+                        unregister()
                     }
-                    cursor.close()
-                } catch (e: Exception) {
-                    Log.e("AppUpdate", "查询下载状态异常", e)
-                    retryCount++
+                    DownloadManager.STATUS_FAILED -> {
+                        val reason = cursor.getInt(reasonColumnIndex)
+                        Log.e("AppUpdateObserver", "ID $downloadId: Download failed, reason: $reason")
+                        val errorMsg = getDownloadErrorReason(reason)
+                        _uiState.value = _uiState.value.copy(
+                            isDownloading = false,
+                            downloadCompleted = false,
+                            error = errorMsg
+                        )
+                        unregister()
+                    }
+                    DownloadManager.STATUS_PAUSED -> {
+                        Log.d("AppUpdateObserver", "ID $downloadId: Download paused")
+                        _uiState.value = _uiState.value.copy(isDownloading = true, error = "下载已暂停")
+                    }
+                    DownloadManager.STATUS_PENDING -> {
+                        Log.d("AppUpdateObserver", "ID $downloadId: Download pending")
+                         _uiState.value = _uiState.value.copy(isDownloading = true, error = null) // Error handled by timeout if it stays pending too long
+                    }
+                    DownloadManager.STATUS_RUNNING -> {
+                        Log.d("AppUpdateObserver", "ID $downloadId: Download running")
+                        _uiState.value = _uiState.value.copy(isDownloading = true, error = null)
+                    }
+                    else -> {
+                        Log.w("AppUpdateObserver", "ID $downloadId: Unknown download status: $status")
+                    }
                 }
-                
-                if (downloading) {
-                    kotlinx.coroutines.delay(1000) // 每1秒检查一次进度
-                    retryCount++
-                }
-            }
-            
-            // 超时处理
-            if (retryCount >= maxRetries && downloading) {
-                Log.e("AppUpdate", "下载监听超时")
+            } else {
+                // Cursor is null or empty, this might mean the download was cancelled or removed.
+                Log.e("AppUpdateObserver", "ID $downloadId: Download query returned no results. Assuming download cancelled/removed.")
                 _uiState.value = _uiState.value.copy(
                     isDownloading = false,
-                    error = "下载超时，请检查网络连接"
+                    error = "下载任务消失或被取消"
                 )
+                unregister()
+            }
+            cursor?.close()
+        }
+
+        fun unregister() {
+            try {
+                context.contentResolver.unregisterContentObserver(this)
+                Log.d("AppUpdateObserver", "DownloadProgressObserver unregistered for ID: $downloadId")
+            } catch (e: Exception) {
+                Log.e("AppUpdateObserver", "Error unregistering content observer for ID: $downloadId", e)
+            }
+            // Nullify the observer in ViewModel to allow GC and prevent re-unregistration
+            if (downloadObserver == this) {
+                downloadObserver = null
             }
         }
+    }
+
+    private fun getDownloadErrorReason(reason: Int): String {
+        return when (reason) {
+            DownloadManager.ERROR_CANNOT_RESUME -> "无法恢复下载"
+            DownloadManager.ERROR_DEVICE_NOT_FOUND -> "存储设备未找到"
+            DownloadManager.ERROR_FILE_ALREADY_EXISTS -> "文件已存在"
+            DownloadManager.ERROR_FILE_ERROR -> "文件错误"
+            DownloadManager.ERROR_HTTP_DATA_ERROR -> "HTTP数据错误"
+            DownloadManager.ERROR_INSUFFICIENT_SPACE -> "存储空间不足"
+            DownloadManager.ERROR_TOO_MANY_REDIRECTS -> "重定向次数过多"
+            DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> "未处理的HTTP错误码"
+            DownloadManager.ERROR_UNKNOWN -> "未知错误"
+            else -> "下载失败(错误码: $reason)"
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        downloadObserver?.unregister()
+        downloadObserver = null
+        Log.d("AppUpdateViewModel", "ViewModel cleared, download observer unregistered.")
     }
 
     /**
@@ -349,8 +416,10 @@ class AppUpdateViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             isDownloading = false,
             downloadCompleted = false,
-            downloadId = null
+            downloadId = null // Keep downloadId to potentially retry or reference later if needed
         )
+        // Also unregister observer if reset is called while download is in progress
+        downloadObserver?.unregister()
     }
 }
 
