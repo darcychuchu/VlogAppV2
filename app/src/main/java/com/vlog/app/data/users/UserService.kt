@@ -41,6 +41,6 @@ interface UserService {
         @Path("name") name: String,
         @Path("token") token: String,
         @Query("nickname") nickname: String,
-        @Part("avatar_file") avatarFile: MultipartBody.Part?
+        @Part avatarFile: MultipartBody.Part?
     ): ApiResponse<Any>
 }

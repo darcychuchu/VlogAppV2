@@ -1,4 +1,4 @@
-package com.vlog.app.ui.screens.publish
+package com.vlog.app.screens.publish
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -136,7 +136,7 @@ class PhotoPublishViewModel @Inject constructor(
                         val file = getFileFromUri(uri)
                         if (file != null) {
                             val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
-                            MultipartBody.Part.createFormData("photoFile", file.name, requestBody)
+                            MultipartBody.Part.createFormData("photo_files", file.name, requestBody)
                         } else {
                             Log.e("PhotoPublishViewModel", "无法获取文件: $uri")
                             null

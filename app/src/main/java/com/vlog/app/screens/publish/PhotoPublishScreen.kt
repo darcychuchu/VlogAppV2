@@ -1,6 +1,10 @@
-package com.vlog.app.ui.screens.publish
+package com.vlog.app.screens.publish
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -25,6 +29,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
@@ -43,8 +49,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,8 +61,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 图文发布页面
@@ -65,9 +79,9 @@ fun PhotoPublishScreen(
     onNavigateBack: () -> Unit,
     viewModel: PhotoPublishViewModel = hiltViewModel()
 ) {
-//    val context = LocalContext.current
-//    val scope = rememberCoroutineScope()
-    val snackBarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
 
     // 状态
@@ -79,7 +93,6 @@ fun PhotoPublishScreen(
     val error by viewModel.error.collectAsState()
     val publishSuccess by viewModel.publishSuccess.collectAsState()
 
-
     // 图片选择结果
     val pickImageLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -87,10 +100,53 @@ fun PhotoPublishScreen(
         uri?.let { viewModel.addPhoto(it) }
     }
 
+
+    // 相机权限状态
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    // 临时照片 URI
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    // 拍照结果
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            // 拍照成功，添加照片
+            tempPhotoUri?.let { uri ->
+                viewModel.addPhoto(uri)
+            }
+        }
+    }
+
+    // 相机权限请求
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (isGranted) {
+            // 权限获取成功，启动相机
+            tempPhotoUri = createImageFile(context)
+            tempPhotoUri?.let { uri ->
+                takePictureLauncher.launch(uri)
+            }
+        } else {
+            // 权限被拒绝
+            Toast.makeText(context, "需要相机权限才能拍照", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // 处理错误信息
     LaunchedEffect(error) {
         error?.let {
-            snackBarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
     }
@@ -98,7 +154,7 @@ fun PhotoPublishScreen(
     // 处理发布成功
     LaunchedEffect(publishSuccess) {
         if (publishSuccess) {
-            snackBarHostState.showSnackbar("发布成功")
+            snackbarHostState.showSnackbar("发布成功")
             viewModel.resetPublishSuccess()
             onNavigateBack()
         }
@@ -115,7 +171,7 @@ fun PhotoPublishScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackBarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -142,6 +198,53 @@ fun PhotoPublishScreen(
                 ) {
                     // 添加照片按钮
                     item {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clickable {
+                                    // 检查相机权限
+                                    if (hasCameraPermission) {
+                                        // 已有权限，直接启动相机
+                                        try {
+                                            tempPhotoUri = createImageFile(context)
+                                            tempPhotoUri?.let { uri ->
+                                                takePictureLauncher.launch(uri)
+                                            }
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "创建图片文件失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        // 请求相机权限
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Camera,
+                                    contentDescription = "拍照",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "拍照",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
                         Box(
                             modifier = Modifier
                                 .size(100.dp)
@@ -277,6 +380,33 @@ fun PhotoPublishScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * 创建图片文件并返回 Uri
+ */
+private fun createImageFile(context: Context): Uri? {
+    return try {
+        // 创建图片文件名
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "JPEG_${timeStamp}_"
+        val storageDir = context.getExternalFilesDir("Pictures")
+        val imageFile = File.createTempFile(
+            imageFileName,
+            ".jpg",
+            storageDir
+        )
+
+        // 返回 FileProvider Uri
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            imageFile
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 

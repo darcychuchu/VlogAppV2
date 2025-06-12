@@ -50,7 +50,7 @@ interface StoriesService {
     suspend fun createStories(
         @Path("name") name: String,
         @Query("token") token: String,
-        @Part("photo_files") photoFiles: List<MultipartBody.Part>?,
+        @Part photoFiles: List<MultipartBody.Part>?,
         @Query("title") title: String?,
         @Query("description") description: String?,
         @Query("tags") tags: String?,

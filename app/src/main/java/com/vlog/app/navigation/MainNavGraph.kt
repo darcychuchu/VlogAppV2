@@ -20,7 +20,7 @@ import com.vlog.app.screens.users.UserStoriesDetailScreen
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.vlog.app.screens.profile.profileNavigation
-import com.vlog.app.ui.screens.publish.PhotoPublishScreen
+import com.vlog.app.screens.publish.PhotoPublishScreen
 
 /**
  * 主导航图
