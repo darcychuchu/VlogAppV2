@@ -300,13 +300,14 @@ class AppUpdateViewModel @Inject constructor(
                 if (statusColumnIndex != -1) {
                     val status = cursor.getInt(statusColumnIndex)
                     if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                        _downloadProgress.value = 100
+                        Log.d(TAG, "Receiver: Download successful. Updating UI state: isDownloading=false, downloadCompleted=true")
                         _downloadProgress.value = 100
                         _uiState.value = _uiState.value.copy(
                             isDownloading = false,
                             downloadCompleted = true,
                             error = null
                         )
+                        Log.d(TAG, "Receiver: UI state updated. Current isDownloading: ${_uiState.value.isDownloading}, downloadCompleted: ${_uiState.value.downloadCompleted}")
                         Log.i(TAG, "DownloadCompletionReceiver: ID $receivedId SUCCESSFUL. UI updated. Attempting install.")
                         installApk()
                     } else if (status == DownloadManager.STATUS_FAILED) {
@@ -467,13 +468,23 @@ class AppUpdateViewModel @Inject constructor(
      * 安装APK
      */
     fun installApk() {
-        Log.d(TAG, "installApk called")
-        // Reset install permission flag first
+        // Log entry point with context if possible (e.g. called by receiver)
+        // For now, a general entry log. The call from receiver is already logged in the receiver.
+        Log.i(TAG, "installApk() called. Current download ID: $currentDownloadId")
+
         _uiState.value = _uiState.value.copy(requiresInstallPermission = false, error = null)
         Log.d(TAG, "Install permission flag reset in UI state.")
 
+        // Log current state of 'canRequestPackageInstalls' before the check
+        val canRequestPackageInstalls = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.packageManager.canRequestPackageInstalls()
+        } else {
+            true // Not applicable for pre-O
+        }
+        Log.d(TAG, "installApk: Checking 'canRequestPackageInstalls' permission. Currently granted: $canRequestPackageInstalls")
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!context.packageManager.canRequestPackageInstalls()) {
+            if (!canRequestPackageInstalls) { // Use the pre-fetched value
                 Log.w(TAG, "REQUEST_INSTALL_PACKAGES permission not granted.")
                 _uiState.value = _uiState.value.copy(
                     requiresInstallPermission = true,
@@ -482,21 +493,23 @@ class AppUpdateViewModel @Inject constructor(
                 Log.d(TAG, "UI state updated: requiresInstallPermission=true")
                 return
             }
-            Log.d(TAG, "REQUEST_INSTALL_PACKAGES permission is granted (or not needed for pre-O).")
+            Log.d(TAG, "REQUEST_INSTALL_PACKAGES permission is granted.")
         }
 
         if (currentDownloadId == null) {
-            Log.e(TAG, "Install APK called with no currentDownloadId.")
+            Log.e(TAG, "installApk: currentDownloadId is null. Cannot proceed with installation.")
             _uiState.value = _uiState.value.copy(error = "无法找到下载任务ID，无法安装。")
             return
         }
-        Log.d(TAG, "Using currentDownloadId: $currentDownloadId to install APK.")
+        Log.d(TAG, "installApk: Using currentDownloadId: $currentDownloadId to install APK.")
 
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        Log.d(TAG, "installApk: Calling downloadManager.getUriForDownloadedFile for ID: $currentDownloadId")
         val apkUri: Uri? = downloadManager.getUriForDownloadedFile(currentDownloadId!!)
+        Log.d(TAG, "installApk: APK URI from DownloadManager: $apkUri")
 
         if (apkUri == null) {
-            Log.e(TAG, "Failed to get URI for downloaded file ID: $currentDownloadId. Querying status.")
+            Log.e(TAG, "installApk: Failed to get URI for downloaded file ID: $currentDownloadId. Querying status.")
             val query = DownloadManager.Query().setFilterById(currentDownloadId!!)
             val cursor = downloadManager.query(query)
             var statusMessage = "下载文件未找到或下载失败。"
@@ -520,35 +533,33 @@ class AppUpdateViewModel @Inject constructor(
                 Log.w(TAG, "Query for download ID $currentDownloadId returned no results.")
             }
             _uiState.value = _uiState.value.copy(error = statusMessage)
-            Log.d(TAG, "UI state updated with error: $statusMessage")
+            Log.d(TAG, "installApk: UI state updated with error after null URI: $statusMessage")
             return
         }
 
-        Log.i(TAG, "Attempting to install APK from URI: $apkUri for download ID: $currentDownloadId")
-
         try {
-            // Ensure requiresInstallPermission flag is false if we reached here after permission was granted.
-             if (_uiState.value.requiresInstallPermission) {
+             if (_uiState.value.requiresInstallPermission) { // Should be false if check above passed, but good for safety
                 _uiState.value = _uiState.value.copy(requiresInstallPermission = false)
-                Log.d(TAG, "Cleared requiresInstallPermission flag as install is proceeding.")
+                Log.d(TAG, "installApk: Cleared requiresInstallPermission flag as install is proceeding.")
             }
 
             val installIntent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
-            Log.d(TAG, "Install intent created: $installIntent")
+            Log.d(TAG, "installApk: Install intent created: $installIntent")
 
+            Log.i(TAG, "installApk: Launching install intent with URI: $apkUri for download ID: $currentDownloadId")
             context.startActivity(installIntent)
-            Log.i(TAG, "Install activity started for URI: $apkUri")
+            // Log.i(TAG, "Install activity started for URI: $apkUri") // This log might not be reached if startActivity throws an exception or navigates away immediately.
 
             _uiState.value = _uiState.value.copy(
                  isDownloading = false,
                  downloadCompleted = true
             )
-            Log.d(TAG, "UI state updated: downloadCompleted=true")
+            Log.d(TAG, "installApk: UI state updated: downloadCompleted=true after launching install intent.")
         } catch (e: Exception) {
-            Log.e(TAG, "Install APK failed with exception for URI: $apkUri", e)
+            Log.e(TAG, "installApk: Install failed with exception for URI $apkUri", e)
             _uiState.value = _uiState.value.copy(
                 error = "安装失败: ${e.message}"
             )
