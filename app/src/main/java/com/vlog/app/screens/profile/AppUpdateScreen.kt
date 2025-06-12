@@ -6,10 +6,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.provider.Settings
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -214,8 +220,12 @@ fun UpdateActionSection(
     onInstall: () -> Unit,
     onClearError: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column {
-        // 错误信息
+        // 错误信息 / Permission messages
+        // The error message set in ViewModel for permission will be displayed here.
+        // If a specific permission flag is true, we might show additional context or specific buttons below.
         uiState.error?.let { error ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -243,41 +253,54 @@ fun UpdateActionSection(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // 操作按钮
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // 检查更新按钮
+        // Permission specific buttons take precedence
+        if (uiState.requiresStoragePermission) {
             Button(
-                onClick = onCheckUpdate,
-                enabled = !uiState.isChecking && !uiState.isDownloading,
-                modifier = Modifier.weight(1f)
+                onClick = {
+                    // For this subtask, actual permission request is out of scope.
+                    // Clicking this button would ideally trigger request.
+                    // For now, it can re-trigger onDownload which will re-evaluate.
+                    onDownload()
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                if (uiState.isChecking) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("检查更新")
+                Icon(Icons.Default.Storage, contentDescription = "Storage Permission")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("授予存储权限以下载")
             }
-
-            // 下载/安装按钮
-            if (uiState.hasUpdate) {
+        } else if (uiState.requiresInstallPermission) {
+            Button(
+                onClick = {
+                    // For this subtask, actual intent to settings is illustrative.
+                    // This would navigate user to grant "install unknown apps" permission.
+                    try {
+                        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                        intent.data = Uri.parse("package:${context.packageName}")
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // Fallback or log error if settings cannot be opened
+                    }
+                    // Optionally, could call onInstall() to re-trigger check after user returns
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = "Install Permission")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("授予安装权限以更新")
+            }
+        } else {
+            // Standard 操作按钮
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 检查更新按钮
                 Button(
-                    onClick = if (uiState.downloadCompleted) onInstall else onDownload,
+                    onClick = onCheckUpdate,
                     enabled = !uiState.isChecking && !uiState.isDownloading,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (uiState.isDownloading) {
+                    if (uiState.isChecking) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
@@ -285,12 +308,36 @@ fun UpdateActionSection(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Icon(
-                        imageVector = if (uiState.downloadCompleted) Icons.Default.Update else Icons.Default.Download,
+                        imageVector = Icons.Default.Refresh,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (uiState.downloadCompleted) "安装" else "下载")
+                    Text("检查更新")
+                }
+
+                // 下载/安装按钮 - only shown if no specific permission is actively required
+                if (uiState.hasUpdate) {
+                    Button(
+                        onClick = if (uiState.downloadCompleted) onInstall else onDownload,
+                        enabled = !uiState.isChecking && !uiState.isDownloading,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (uiState.isDownloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Icon(
+                            imageVector = if (uiState.downloadCompleted) Icons.Default.Update else Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (uiState.downloadCompleted) "安装" else "下载")
+                    }
                 }
             }
         }

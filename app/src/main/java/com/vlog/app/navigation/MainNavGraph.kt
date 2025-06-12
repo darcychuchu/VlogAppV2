@@ -19,7 +19,6 @@ import com.vlog.app.screens.users.UserHomeScreen
 import com.vlog.app.screens.users.UserStoriesDetailScreen
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.vlog.app.screens.profile.ProfileScreen
 import com.vlog.app.screens.profile.profileNavigation
 import com.vlog.app.ui.screens.publish.PhotoPublishScreen
 
