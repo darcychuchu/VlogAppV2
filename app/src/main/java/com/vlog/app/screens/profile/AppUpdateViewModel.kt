@@ -299,9 +299,10 @@ class AppUpdateViewModel @Inject constructor(
                             downloadCompleted = true,
                             error = null
                         )
-                        Log.d(TAG, "Receiver: UI state updated. Current isDownloading: ${_uiState.value.isDownloading}, downloadCompleted: ${_uiState.value.downloadCompleted}")
-                        Log.i(TAG, "DownloadCompletionReceiver: ID $receivedId SUCCESSFUL. UI updated. Attempting install.")
                         installApk()
+                        Log.d(TAG, "Receiver: -----------------------------------------------------UI state updated. Current isDownloading: ${_uiState.value.isDownloading}, downloadCompleted: ${_uiState.value.downloadCompleted}")
+                        Log.i(TAG, "DownloadCompletionReceiver: ------------------------------------------------ID $receivedId SUCCESSFUL. UI updated. Attempting install.")
+
                     } else if (status == DownloadManager.STATUS_FAILED) {
                         val reason = if (reasonColumnIndex != -1) cursor.getInt(reasonColumnIndex) else -1
                         val errorMsg = getDownloadErrorReason(reason)
