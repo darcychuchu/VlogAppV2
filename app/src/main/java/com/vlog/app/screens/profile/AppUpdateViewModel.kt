@@ -38,7 +38,7 @@ class AppUpdateViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        private const val TAG = "AppUpdateVM"
+        const val TAG = "AppUpdateVM" // Removed private modifier
     }
 
     private val _uiState = MutableStateFlow(AppUpdateUiState())
