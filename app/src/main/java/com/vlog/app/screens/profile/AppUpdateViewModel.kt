@@ -242,7 +242,7 @@ class AppUpdateViewModel @Inject constructor(
     
     // Setup both ContentObserver and BroadcastReceiver
     private fun monitorDownload(downloadId: Long, downloadManager: DownloadManager) {
-        Log.d(TAG, "monitorDownload called for ID: $downloadId")
+        Log.i(TAG, "monitorDownload: (Re-)Registering listeners for download ID: $downloadId")
         // Register ContentObserver for progress
         downloadObserver?.unregister()
         downloadObserver = DownloadProgressObserver(downloadHandler, downloadManager, downloadId)
@@ -296,10 +296,14 @@ class AppUpdateViewModel @Inject constructor(
             if (cursor != null && cursor.moveToFirst()) {
                 val statusColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
                 val reasonColumnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                var status = -1 // Default to an invalid status
 
                 if (statusColumnIndex != -1) {
-                    val status = cursor.getInt(statusColumnIndex)
+                    status = cursor.getInt(statusColumnIndex)
                     if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                        if (_uiState.value.error == "下载已暂停") { // Check for the exact error message
+                            Log.i(TAG, "Receiver: Download successful (was previously paused). Forcing state update and install.")
+                        }
                         Log.d(TAG, "Receiver: Download successful. Updating UI state: isDownloading=false, downloadCompleted=true")
                         _downloadProgress.value = 100
                         _uiState.value = _uiState.value.copy(
@@ -326,8 +330,10 @@ class AppUpdateViewModel @Inject constructor(
                      Log.e(TAG, "DownloadCompletionReceiver: Could not find status column for ID $receivedId")
                 }
                 cursor.close()
+                Log.i(TAG, "Receiver: Download processing finished for ID: $receivedId (Reported Status: $status). Calling unregisterListeners.")
             } else {
                  Log.e(TAG, "DownloadCompletionReceiver: Cursor null or empty for ID $receivedId")
+                 Log.i(TAG, "Receiver: Download processing finished due to empty cursor for ID: $receivedId. Calling unregisterListeners.")
             }
             unregisterListeners()
         }
@@ -395,6 +401,7 @@ class AppUpdateViewModel @Inject constructor(
                         if (_uiState.value.downloadId == downloadId && !_uiState.value.downloadCompleted) {
                            _uiState.value = _uiState.value.copy(isDownloading = true, error = "下载已暂停")
                            Log.d(TAG, "DownloadProgressObserver: UI state updated for PAUSED.")
+                           Log.d(TAG, "DownloadProgressObserver: PAUSED state. isDownloading is now: ${_uiState.value.isDownloading}")
                         }
                     }
                     DownloadManager.STATUS_PENDING -> {
@@ -437,9 +444,19 @@ class AppUpdateViewModel @Inject constructor(
     }
 
     private fun unregisterListeners() {
-        Log.d(TAG, "unregisterListeners called")
-        downloadReceiver?.unregister()
-        downloadObserver?.unregister()
+        Log.i(TAG, "unregisterListeners: Attempting to unregister observer and receiver.")
+        if (downloadObserver != null) {
+            Log.d(TAG, "unregisterListeners: Unregistering DownloadProgressObserver.")
+            downloadObserver?.unregister()
+        } else {
+            Log.d(TAG, "unregisterListeners: DownloadProgressObserver was already null.")
+        }
+        if (downloadReceiver != null) {
+            Log.d(TAG, "unregisterListeners: Unregistering DownloadCompletionReceiver.")
+            downloadReceiver?.unregister()
+        } else {
+            Log.d(TAG, "unregisterListeners: DownloadCompletionReceiver was already null.")
+        }
     }
     private fun getDownloadErrorReason(reason: Int): String {
         // No specific logging here as it's a pure helper, logging happens at call site.
@@ -459,7 +476,7 @@ class AppUpdateViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        Log.d(TAG, "onCleared called. Unregistering listeners.")
+        Log.i(TAG, "onCleared: Calling unregisterListeners to clean up.")
         unregisterListeners()
         currentDownloadId = null
     }
@@ -583,7 +600,7 @@ class AppUpdateViewModel @Inject constructor(
      * 重置下载状态
      */
     fun resetDownloadState() {
-        Log.d(TAG, "resetDownloadState called")
+        Log.i(TAG, "resetDownloadState: User action to reset download state.")
         _uiState.value = _uiState.value.copy(
             isDownloading = false,
             downloadCompleted = false,
@@ -592,10 +609,11 @@ class AppUpdateViewModel @Inject constructor(
             requiresStoragePermission = false,
             requiresInstallPermission = false
         )
-        Log.d(TAG, "UI download state reset.")
+        Log.d(TAG, "resetDownloadState: UI download state reset.")
+        Log.i(TAG, "resetDownloadState: Calling unregisterListeners.")
         unregisterListeners()
         currentDownloadId = null
-        Log.d(TAG, "Current download ID cleared.")
+        Log.d(TAG, "resetDownloadState: Current download ID cleared.")
     }
 }
 
