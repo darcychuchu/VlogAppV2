@@ -221,7 +221,7 @@ class PhotoPublishViewModel @Inject constructor(
             BitmapFactory.decodeFile(file.path, options)
 
             // 计算压缩比例
-            val maxSize = 1024 // 最大尺寸为 1024px
+            val maxSize = 2048 // 最大尺寸为 1024px
             var scale = 1
             if (options.outWidth > maxSize || options.outHeight > maxSize) {
                 scale = (options.outWidth / maxSize).coerceAtLeast(options.outHeight / maxSize)
@@ -238,8 +238,8 @@ class PhotoPublishViewModel @Inject constructor(
             // 如果图片太大，进一步压缩质量
             val compressedFile = File.createTempFile("compressed_", ".jpg", context.cacheDir)
             compressedFile.outputStream().use { output ->
-                // 压缩质量为 80%
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
+                // 压缩质量为 90%
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output)
             }
 
             // 释放原始 Bitmap 内存

@@ -3,6 +3,7 @@ package com.vlog.app.di
 object Constants {
 
     const val VLOG_APP = "https://66log.com"
+    //const val VLOG_APP = "http://192.168.43.239:8199"
     const val API_BASE_URL = "${VLOG_APP}/api/json/v2/"
 
     const val APP_VERSION = "1.0.0"
