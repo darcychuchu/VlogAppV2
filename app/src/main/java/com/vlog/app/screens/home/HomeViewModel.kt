@@ -25,7 +25,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        private const val DEFAULT_PAGE_SIZE = 10
+        private const val DEFAULT_PAGE_SIZE = 12
         private const val DEFAULT_STORY_TYPE = 0
         private const val DEFAULT_ORDER_BY = 0 // 0 for 'latest'
     }
@@ -121,38 +121,34 @@ class HomeViewModel @Inject constructor(
 
                 Log.d("HomeViewModel", "API响应: code=${response.code}, message=${response.message}, data=${response.data != null}")
 
-                if (response.code == ApiResponseCode.SUCCESS && response.data != null) {
+                if (response.code == ApiResponseCode.SUCCESS && response.data?.items != null) {
                     val paginatedResponse = response.data
                     val newStories = paginatedResponse.items // Assuming PaginatedResponse has 'items'
 
                     // 添加日志
-                    Log.d("HomeViewModel", "获取到全局列表: ${newStories?.size}个, 当前页: $currentPage")
-                    newStories?.forEach { story ->
+                    Log.d("HomeViewModel", "获取到全局列表: ${newStories.size}个, 当前页: $currentPage")
+                    newStories.forEach { story ->
                         Log.d("HomeViewModel", "内容: id=${story.id}, title=${story.title}, isTyped=${story.isTyped}")
                     }
 
                     // 更新列表
                     if (refresh) {
-                        if (newStories != null) {
-                            _storiesList.value = newStories
-                        }
+                        _storiesList.value = newStories
                     } else {
-                        if (newStories != null) {
-                            _storiesList.value = _storiesList.value + newStories
-                        }
+                        _storiesList.value = _storiesList.value + newStories
                     }
 
                     // Update pagination info if available from paginatedResponse
                     // For example: _pagination.value = PaginationInfo(paginatedResponse.currentPage, paginatedResponse.totalPages, ...)
 
                     // 更新是否有更多数据
-                    _hasMoreData.value = newStories?.size == DEFAULT_PAGE_SIZE && newStories.isNotEmpty()
+                    _hasMoreData.value = newStories.size == DEFAULT_PAGE_SIZE
                     // Alternative if PaginatedResponse has hasNextPage or totalPages:
                     // _hasMoreData.value = paginatedResponse.hasNextPage
                     // _hasMoreData.value = currentPage < paginatedResponse.totalPages
 
                     // 更新当前页码 only if data was successfully loaded and there might be more
-                    if (newStories?.isNotEmpty() == true) {
+                    if (newStories.isNotEmpty() == true) {
                         currentPage++
                     }
 

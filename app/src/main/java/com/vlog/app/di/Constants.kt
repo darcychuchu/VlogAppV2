@@ -2,11 +2,12 @@ package com.vlog.app.di
 
 object Constants {
 
-    const val VLOG_APP = "https://66log.com"
+    // AndroidManifest.xml application set  android:usesCleartextTraffic="true"
     //const val VLOG_APP = "http://192.168.43.239:8199"
+    const val VLOG_APP = "https://66log.com"
     const val API_BASE_URL = "${VLOG_APP}/api/json/v2/"
 
-    const val APP_VERSION = "1.0.0"
+    const val APP_VERSION = "2.0.0"
 
     // update
     const val ENDPOINT_CHECK_UPDATE = "app/version"
@@ -24,7 +25,7 @@ object Constants {
     const val ENDPOINT_VIDEO_COMMENTS = "videos/comments/{videoId}"
     const val ENDPOINT_VIDEO_DETAIL = "videos/detail/{videoId}"
     const val ENDPOINT_VIDEO_GATHER = "videos/detail/gathers/{videoId}"
-    const val ENDPOINT_VIDEO_LIST = "videos/list"
+    const val ENDPOINT_VIDEO_FILTER = "videos/filter"
     const val ENDPOINT_VIDEO_CATEGORIES = "videos/categories"
     const val ENDPOINT_VIDEO_SEARCH = "videos/search"
 

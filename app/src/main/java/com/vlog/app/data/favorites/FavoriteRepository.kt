@@ -1,6 +1,5 @@
 package com.vlog.app.data.favorites
 
-import android.util.Log
 import com.vlog.app.data.users.UserSessionManager
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoEntity
@@ -73,10 +72,8 @@ class FavoriteRepository @Inject constructor(
                 val entities = favoritesList.map { it.toEntity() }
                 favoritesDao.insertFavoriteVideos(entities)
 
-                Log.d("3---",entities.toString())
                 // 同步视频详细信息到VideoEntity表
                 val videoDetailsResponse = favoriteService.updateFavoriteVideos(username, token)
-                Log.d("4---",videoDetailsResponse.toString())
                 if (videoDetailsResponse.code == 200) {
                     val videoDetailsList = videoDetailsResponse.data ?: emptyList()
                     val videoEntities = videoDetailsList.map { it.toEntity() }
@@ -146,7 +143,6 @@ class FavoriteRepository @Inject constructor(
         
         return try {
             val response = favoriteService.updateFavoriteVideos(username, token)
-            Log.d("3----",response.toString())
             if (response.code == 200) {
                 val videoDetailsList = response.data ?: emptyList()
                 

@@ -228,7 +228,7 @@ class FilterViewModel @Inject constructor(
                 typed = typed ?: 1, // Default to 1 if typed is null
                 categoryId = cate,
                 year = year ?: 0, // Default to 0 if year is null
-                sort = orderBy ?: 0, // Default to 0 if sort is null
+                sort = orderBy ?: 2, // Default to 0 if sort is null
                 page = 1 // Always page 1 for initial load
                 // forceRefresh argument removed
             )

@@ -10,7 +10,7 @@ import retrofit2.http.Query
 
 interface VideoService {
 
-    @GET(Constants.ENDPOINT_VIDEO_LIST)
+    @GET(Constants.ENDPOINT_VIDEO_FILTER)
     suspend fun getVideos(
         @Query("typed") typed: Int = 0,
         @Query("cate") cate: String? = null,
