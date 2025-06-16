@@ -381,8 +381,8 @@ object DefaultFilterConfig {
     val orderBy = FilterSection(
         title = "排序",
         items = listOf(
-            FilterItem("0", "创建时间"),
-            FilterItem("1", "更新时间"),
+            FilterItem("0", "上映时间"),
+            FilterItem("1", "评分"),
             FilterItem("2", "热度"),
             FilterItem("3", "推荐")
         ),
