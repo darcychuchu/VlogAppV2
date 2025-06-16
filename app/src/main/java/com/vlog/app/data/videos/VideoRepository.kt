@@ -19,20 +19,20 @@ import javax.inject.Singleton
 @Singleton
 class VideoRepository @Inject constructor(
     private val videoService: VideoService,
-    private val videoDao: VideoDao,
-    private val gatherItemDao: GatherItemDao,
-    private val filterUrlCacheDao: FilterUrlCacheDao, // Added
+    //private val videoDao: VideoDao,
+    //private val gatherItemDao: GatherItemDao,
+    //private val filterUrlCacheDao: FilterUrlCacheDao, // Added
     private val moshi: Moshi // Added
 ) {
 
-    private val CACHE_DURATION_MS = 30 * 60 * 1000L // 30 minutes
+    //private val CACHE_DURATION_MS = 30 * 60 * 1000L // 30 minutes
 
-    // 获取所有视频的Flow
-    fun getAllVideos(): Flow<List<Videos>> {
-        return videoDao.getAllVideos().map { entities ->
-            entities.map { it.toVideos() }
-        }
-    }
+//    // 获取所有视频的Flow
+//    fun getAllVideos(): Flow<List<Videos>> {
+//        return videoDao.getAllVideos().map { entities ->
+//            entities.map { it.toVideos() }
+//        }
+//    }
     
     // 获取筛选后的视频列表******************************************************************
     @SuppressLint("SuspiciousIndentation")
@@ -44,47 +44,47 @@ class VideoRepository @Inject constructor(
         page: Int = 1,
         pageSize: Int = 24
     ): Result<PaginatedResponse<Videos>> {
-        // 1. Construct Cache Key
-        val cacheKeyBuilder = StringBuilder("filter_videos_v2")
-        cacheKeyBuilder.append("?typed=").append(typed)
-        cacheKeyBuilder.append("&categoryId=").append(categoryId ?: "null")
-        cacheKeyBuilder.append("&year=").append(year)
-        cacheKeyBuilder.append("&sort=").append(sort)
-        cacheKeyBuilder.append("&page=").append(page)
-        cacheKeyBuilder.append("&pageSize=").append(pageSize)
-        val cacheKey = cacheKeyBuilder.toString()
-
-        val responseType = Types.newParameterizedType(PaginatedResponse::class.java, Videos::class.java)
-        val adapter = moshi.adapter<PaginatedResponse<Videos>>(responseType)
-
-        try {
-            // 2. Delete Expired Cache
-            filterUrlCacheDao.deleteExpiredCache(System.currentTimeMillis() - CACHE_DURATION_MS)
-
-            // 3. Check Cache
-            val cachedEntity = filterUrlCacheDao.getCache(cacheKey)
-            if (cachedEntity != null) {
-                try {
-                    val cachedResponse = adapter.fromJson(cachedEntity.responseDataJson)
-                    if (cachedResponse != null) {
-                        Log.d("VideoRepository", "Returning cached response for $cacheKey")
-                        return Result.success(cachedResponse)
-                    } else {
-                        Log.w("VideoRepository", "Failed to deserialize cached JSON for $cacheKey. Fetching from network.")
-                    }
-                } catch (e: Exception) {
-                    Log.e("VideoRepository", "Error deserializing cached JSON for $cacheKey: ${e.message}. Fetching from network.", e)
-                }
-            }
-        } catch (cacheReadEx: Exception) {
-            Log.e("VideoRepository", "Error accessing filter URL cache: ${cacheReadEx.message}", cacheReadEx)
-            // Proceed to network fetch
-        }
-
-        // 4. Fetch from Network (if cache miss or error)
-        Log.d("VideoRepository", "No valid cache for $cacheKey. Fetching from network.")
+//        // 1. Construct Cache Key
+//        val cacheKeyBuilder = StringBuilder("filter_videos_v2")
+//        cacheKeyBuilder.append("?typed=").append(typed)
+//        cacheKeyBuilder.append("&categoryId=").append(categoryId ?: "null")
+//        cacheKeyBuilder.append("&year=").append(year)
+//        cacheKeyBuilder.append("&sort=").append(sort)
+//        cacheKeyBuilder.append("&page=").append(page)
+//        cacheKeyBuilder.append("&pageSize=").append(pageSize)
+//        val cacheKey = cacheKeyBuilder.toString()
+//
+//        val responseType = Types.newParameterizedType(PaginatedResponse::class.java, Videos::class.java)
+//        val adapter = moshi.adapter<PaginatedResponse<Videos>>(responseType)
+//
+//        try {
+//            // 2. Delete Expired Cache
+//            filterUrlCacheDao.deleteExpiredCache(System.currentTimeMillis() - CACHE_DURATION_MS)
+//
+//            // 3. Check Cache
+//            val cachedEntity = filterUrlCacheDao.getCache(cacheKey)
+//            if (cachedEntity != null) {
+//                try {
+//                    val cachedResponse = adapter.fromJson(cachedEntity.responseDataJson)
+//                    if (cachedResponse != null) {
+//                        Log.d("VideoRepository", "Returning cached response for $cacheKey")
+//                        return Result.success(cachedResponse)
+//                    } else {
+//                        Log.w("VideoRepository", "Failed to deserialize cached JSON for $cacheKey. Fetching from network.")
+//                    }
+//                } catch (e: Exception) {
+//                    Log.e("VideoRepository", "Error deserializing cached JSON for $cacheKey: ${e.message}. Fetching from network.", e)
+//                }
+//            }
+//        } catch (cacheReadEx: Exception) {
+//            Log.e("VideoRepository", "Error accessing filter URL cache: ${cacheReadEx.message}", cacheReadEx)
+//            // Proceed to network fetch
+//        }
+//
+//        // 4. Fetch from Network (if cache miss or error)
+//        Log.d("VideoRepository", "No valid cache for $cacheKey. Fetching from network.")
         return try {
-            val response = videoService.getVideos(
+            val response = videoService.getVideosFilter(
                 typed = typed,
                 cate = categoryId,
                 year = year,
@@ -95,19 +95,19 @@ class VideoRepository @Inject constructor(
 
             if (response.code == 200 && response.data != null) {
                 val apiResponseData = response.data
-                // Update local DB (existing logic)
-                val entities = apiResponseData.items?.map { it.toEntity() } ?: emptyList()
-                videoDao.updateVideosWithVersionCheck(entities)
-
-                // Save to Cache
-                try {
-                    val jsonResponse = adapter.toJson(apiResponseData)
-                    val newCacheEntity = FilterUrlCacheEntity(cacheKey, System.currentTimeMillis(), jsonResponse)
-                    filterUrlCacheDao.insertCache(newCacheEntity)
-                    Log.d("VideoRepository", "Saved response to cache for $cacheKey")
-                } catch (cacheWriteEx: Exception) {
-                    Log.e("VideoRepository", "Error saving response to cache for $cacheKey: ${cacheWriteEx.message}", cacheWriteEx)
-                }
+//                // Update local DB (existing logic)
+//                val entities = apiResponseData.items?.map { it.toEntity() } ?: emptyList()
+//                videoDao.updateVideosWithVersionCheck(entities)
+//
+//                // Save to Cache
+//                try {
+//                    val jsonResponse = adapter.toJson(apiResponseData)
+//                    val newCacheEntity = FilterUrlCacheEntity(cacheKey, System.currentTimeMillis(), jsonResponse)
+//                    filterUrlCacheDao.insertCache(newCacheEntity)
+//                    Log.d("VideoRepository", "Saved response to cache for $cacheKey")
+//                } catch (cacheWriteEx: Exception) {
+//                    Log.e("VideoRepository", "Error saving response to cache for $cacheKey: ${cacheWriteEx.message}", cacheWriteEx)
+//                }
                 Result.success(apiResponseData)
             } else {
                 Result.failure(Exception(response.message ?: "获取视频列表失败 Code: ${response.code}"))
@@ -130,7 +130,6 @@ class VideoRepository @Inject constructor(
                 page = page,
                 size = pageSize
             )
-            
             if (response.code == 200 && response.data != null) {
                 Result.success(response.data)
             } else {
@@ -151,7 +150,6 @@ class VideoRepository @Inject constructor(
                 videoId = id,
                 token = token
             )
-            
             if (response.code == 200 && response.data != null) {
                 Result.success(response.data)
             } else {
@@ -162,13 +160,13 @@ class VideoRepository @Inject constructor(
         }
     }
 
-    fun getLocalVideoDetail(videoId: String): Flow<VideoEntity?> {
-        return videoDao.getVideoByIdFlow(videoId)
-    }
-
-
-    ////*************************************************************************************
-    fun fetchAndCacheVideoDetail(videoId: String): Flow<Resource<VideoEntity>> = flow {
+//    fun getLocalVideoDetail(videoId: String): Flow<VideoEntity?> {
+//        return videoDao.getVideoByIdFlow(videoId)
+//    }
+//
+//
+//    ////*************************************************************************************
+    fun fetchAndCacheVideoDetail(videoId: String): Flow<Resource<Videos>> = flow {
         emit(Resource.Loading())
         // Use the existing suspend fun getVideoDetail(id: String, token: String?)
         // which already handles the API call and returns Result<Videos>.
@@ -176,68 +174,72 @@ class VideoRepository @Inject constructor(
 
         result.fold(
             onSuccess = { videoDto ->
-                val videoEntity = videoDto.toEntity()
-                try {
-                    videoEntity.lastRefreshed = System.currentTimeMillis()
-                    videoDao.insertVideo(videoEntity)
-                    emit(Resource.Success(videoEntity))
-                    return@flow
-                } catch (dbException: Exception) {
-                    emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
-                }
+                //val videoEntity = videoDto.toEntity()
+//                try {
+//                    videoEntity.lastRefreshed = System.currentTimeMillis()
+//                    videoDao.insertVideo(videoEntity)
+//                    emit(Resource.Success(videoEntity))
+//                    return@flow
+//                } catch (dbException: Exception) {
+//                    emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
+//                }
+                emit(Resource.Success(videoDto))
             },
             onFailure = { exception ->
                 emit(Resource.Error("Failed to fetch video detail: ${exception.message}", null))
             }
         )
     }.flowOn(Dispatchers.IO)
-
-
+//
+//
     fun getGatherList(videoId: String): Flow<Resource<List<GatherList>>> = flow {
         emit(Resource.Loading())
         // Using injected moshi instance now
-        val listType = Types.newParameterizedType(List::class.java, GatherList::class.java)
-        val gatherListAdapter = moshi.adapter<List<GatherList>>(listType)
+        //val listType = Types.newParameterizedType(List::class.java, GatherList::class.java)
+        //val gatherListAdapter = moshi.adapter<List<GatherList>>(listType)
 
         try {
-            val cachedEntity = gatherItemDao.getGatherItemSync(videoId)
-            val currentTime = System.currentTimeMillis()
-
-            if (cachedEntity != null) {
-                if (currentTime - cachedEntity.lastUpdated < 3600000L) { // 1 hour in milliseconds
-                    if (!cachedEntity.gatherListJson.isNullOrBlank()) {
-                        val gatherList: List<GatherList>? = gatherListAdapter.fromJson(cachedEntity.gatherListJson?:"""{}""")
-                        if (gatherList != null) {
-                            emit(Resource.Success(gatherList))
-                        }
-                    } else {
-                        emit(Resource.Success(emptyList()))
-                    }
-                    return@flow
-                }
-            }
-
-            val gatherListVersion = cachedEntity?.version ?: -1
-            val apiResponse = videoService.getGatherList(videoId, gatherListVersion)
+//            val cachedEntity = gatherItemDao.getGatherItemSync(videoId)
+//            val currentTime = System.currentTimeMillis()
+//
+//            if (cachedEntity != null) {
+//                if (currentTime - cachedEntity.lastUpdated < 3600000L) { // 1 hour in milliseconds
+//                    if (!cachedEntity.gatherListJson.isNullOrBlank()) {
+//                        val gatherList: List<GatherList>? = gatherListAdapter.fromJson(cachedEntity.gatherListJson?:"""{}""")
+//                        if (gatherList != null) {
+//                            emit(Resource.Success(gatherList))
+//                        }
+//                    } else {
+//                        emit(Resource.Success(emptyList()))
+//                    }
+//                    return@flow
+//                }
+//            }
+//
+//            val gatherListVersion = cachedEntity?.version ?: -1
+            val apiResponse = videoService.getGatherList(videoId, -1)
             if (apiResponse.code == 200) {
                 val serverGatherItems: GatherItem? = apiResponse.data
                 if (serverGatherItems != null && serverGatherItems.gatherList?.isNotEmpty() == true) {
-                    val newVersion = serverGatherItems.version
+                    //val newVersion = serverGatherItems.version
                     val actualEpisodeList: List<GatherList> = serverGatherItems.gatherList!!
-                    try {
-                        val jsonGatherList = gatherListAdapter.toJson(actualEpisodeList)
-                        val newEntity = GatherItemEntity(
-                            videoId = videoId,
-                            version = newVersion,
-                            gatherListJson = jsonGatherList,
-                            lastUpdated = System.currentTimeMillis()
-                        )
-                        gatherItemDao.insertItem(newEntity)
-                        emit(Resource.Success(actualEpisodeList))
+//                    try {
+//                        val jsonGatherList = gatherListAdapter.toJson(actualEpisodeList)
+//                        val newEntity = GatherItemEntity(
+//                            videoId = videoId,
+//                            version = newVersion,
+//                            gatherListJson = jsonGatherList,
+//                            lastUpdated = System.currentTimeMillis()
+//                        )
+//                        gatherItemDao.insertItem(newEntity)
+//                        emit(Resource.Success(actualEpisodeList))
+//
+//                    } catch (dbException: Exception) {
+//                        emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
+//                    }
 
-                    } catch (dbException: Exception) {
-                        emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
-                    }
+
+                    emit(Resource.Success(actualEpisodeList))
                 }
                 return@flow
             } else { // API error
@@ -248,39 +250,39 @@ class VideoRepository @Inject constructor(
             emit(Resource.Error(e.message ?: "Unknown error fetching gather list", null))
         }
     }.flowOn(Dispatchers.IO)
-
-    fun getYouLikeMoreVideos(
-        categoryId: String,
-        tagsCsv: String?,
-        regionCsv: String?,
-        limit: Int,
-        currentVideoId: String
-    ): Flow<Resource<List<Videos>>> = flow {
-        emit(Resource.Loading())
-        try {
-            val parsedTags = tagsCsv?.split('/')
-                ?.map { it.trim() }
-                ?.filter { it.isNotBlank() }
-                ?: emptyList()
-
-            val parsedRegions = regionCsv?.split('/')
-                ?.map { it.trim() }
-                ?.filter { it.isNotBlank() }
-                ?: emptyList()
-
-            val videoEntities = videoDao.getSimilarVideos(
-                categoryId = categoryId,
-                tags = parsedTags,
-                regions = parsedRegions,
-                limit = limit,
-                excludeId = currentVideoId
-            )
-
-            val videos = videoEntities.map { it.toVideos() }
-            emit(Resource.Success(videos))
-        } catch (e: Exception) {
-            // Consider logging the exception e
-            emit(Resource.Error("Failed to load similar videos: ${e.message}"))
-        }
-    }.flowOn(Dispatchers.IO)
+//
+//    fun getYouLikeMoreVideos(
+//        categoryId: String,
+//        tagsCsv: String?,
+//        regionCsv: String?,
+//        limit: Int,
+//        currentVideoId: String
+//    ): Flow<Resource<List<Videos>>> = flow {
+//        emit(Resource.Loading())
+//        try {
+//            val parsedTags = tagsCsv?.split('/')
+//                ?.map { it.trim() }
+//                ?.filter { it.isNotBlank() }
+//                ?: emptyList()
+//
+//            val parsedRegions = regionCsv?.split('/')
+//                ?.map { it.trim() }
+//                ?.filter { it.isNotBlank() }
+//                ?: emptyList()
+//
+//            val videoEntities = videoDao.getSimilarVideos(
+//                categoryId = categoryId,
+//                tags = parsedTags,
+//                regions = parsedRegions,
+//                limit = limit,
+//                excludeId = currentVideoId
+//            )
+//
+//            val videos = videoEntities.map { it.toVideos() }
+//            emit(Resource.Success(videos))
+//        } catch (e: Exception) {
+//            // Consider logging the exception e
+//            emit(Resource.Error("Failed to load similar videos: ${e.message}"))
+//        }
+//    }.flowOn(Dispatchers.IO)
 }

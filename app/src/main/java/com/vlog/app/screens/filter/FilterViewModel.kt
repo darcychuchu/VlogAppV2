@@ -239,7 +239,7 @@ class FilterViewModel @Inject constructor(
                         it.copy(
                             videos = responseData.items ?: emptyList(),
                             isLoading = false,
-                            canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && responseData.total > (responseData.items?.size ?:0),
+                            canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && responseData.total > responseData.page,
                             error = null
                         )
                     }
@@ -302,7 +302,7 @@ class FilterViewModel @Inject constructor(
                                 videos = it.videos + (responseData.items ?: emptyList()),
                                 currentPage = nextPage,
                                 isLoadingMore = false,
-                                canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && it.videos.size + (responseData.items?.size ?: 0) < responseData.total,
+                                canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && responseData.page < responseData.total,
                                 error = null
                             )
                         }

@@ -53,76 +53,79 @@ class VideoDetailViewModel @Inject constructor(
             // loadRecommendedVideos() // Removed from here
 
             // New block to observe videoDetail changes for triggering recommendations
-            viewModelScope.launch {
-                // Use uiState here, not _uiState, to get the public StateFlow
-                uiState.map { it.videoDetail }
-                    .distinctUntilChanged() // Only react to actual changes in videoDetail
-                    .collectLatest { currentVideoDetail -> // Use collectLatest if subsequent calls should cancel previous
-                        // Check if the videoDetail is now populated, is for the correct videoId,
-                        // and if recommendations haven't been loaded yet for this video.
-                        if (currentVideoDetail != null &&
-                            currentVideoDetail.id == videoId &&
-                            uiState.value.recommendedVideos.isEmpty() && // Check current state for recommendations
-                            !uiState.value.isLoadingRecommendations) { // Avoid re-triggering if already loading
-                            loadRecommendedVideos()
-                        }
-                    }
-            }
+//            viewModelScope.launch {
+//                // Use uiState here, not _uiState, to get the public StateFlow
+//                uiState.map { it.videoDetail }
+//                    .distinctUntilChanged() // Only react to actual changes in videoDetail
+//                    .collectLatest { currentVideoDetail -> // Use collectLatest if subsequent calls should cancel previous
+//                        // Check if the videoDetail is now populated, is for the correct videoId,
+//                        // and if recommendations haven't been loaded yet for this video.
+//                        if (currentVideoDetail != null &&
+//                            currentVideoDetail.id == videoId &&
+//                            uiState.value.recommendedVideos.isEmpty() && // Check current state for recommendations
+//                            !uiState.value.isLoadingRecommendations) { // Avoid re-triggering if already loading
+//                            loadRecommendedVideos()
+//                        }
+//                    }
+//            }
         } else {
             _uiState.update { it.copy(error = "Video ID is missing", isLoading = false) }
         }
     }
 
     private fun observeLocalVideoDetail() {
-        viewModelScope.launch {
-            videoRepository.getLocalVideoDetail(videoId).collectLatest { localVideo ->
-                _uiState.update { currentState ->
-                    if (currentState.videoDetail == null || localVideo != currentState.videoDetail) {
-                        currentState.copy(videoDetail = localVideo?.toVideos(),isLoading = false)
-                    } else {
-                        currentState
-                    }
-                }
-            }
-        }
+//        viewModelScope.launch {
+////            videoRepository.getLocalVideoDetail(videoId).collectLatest { localVideo ->
+////                _uiState.update { currentState ->
+////                    if (currentState.videoDetail == null || localVideo != currentState.videoDetail) {
+////                        currentState.copy(videoDetail = localVideo?.toVideos(),isLoading = false)
+////                    } else {
+////                        currentState
+////                    }
+////                }
+////            }
+//        }
     }
 
     private fun checkAndFetchRemoteVideoDetail() {
         viewModelScope.launch {
-            // Make decision based on the first emission from local data
-            val localVideoInitial = videoRepository.getLocalVideoDetail(videoId).firstOrNull()
-
-            val needsFetch = if (localVideoInitial == null) {
-                true
-            } else {
-                val lastRefreshed = localVideoInitial.lastRefreshed ?: 0L
-                (System.currentTimeMillis() - lastRefreshed) >= (24 * 60 * 60 * 1000L) // 24-hour check
-            }
-
-            if (needsFetch) {
-                _uiState.update { it.copy(isLoading = true, error = null) } // Show loading before fetch
-                videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
-                    _uiState.update { currentState ->
-                        when (resource) {
-                            is Resource.Loading -> currentState.copy(isLoading = true) // Can keep it true
-                            is Resource.Success -> currentState.copy(
-                                isLoading = false,
-                                videoDetail = resource.data?.toVideos() ?: currentState.videoDetail, // Update with fresh data
-                                error = null
-                            )
-                            is Resource.Error -> currentState.copy(
-                                isLoading = false,
-                                error = resource.message ?: "An unknown error occurred"
-                            )
-                        }
+            _uiState.update { it.copy(isLoading = true, error = null) } // Show loading before fetch
+            videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
+                _uiState.update { currentState ->
+                    when (resource) {
+                        is Resource.Loading -> currentState.copy(isLoading = true) // Can keep it true
+                        is Resource.Success -> currentState.copy(
+                            isLoading = false,
+                            videoDetail = resource.data ?: currentState.videoDetail, // Update with fresh data
+                            error = null
+                        )
+                        is Resource.Error -> currentState.copy(
+                            isLoading = false,
+                            error = resource.message ?: "An unknown error occurred"
+                        )
                     }
                 }
-            } else {
-                // If no fetch is needed, the local observer `observeLocalVideoDetail`
-                // should have already populated the UI. We just ensure loading is false,
-                // and explicitly set the video data from our initial check.
-                _uiState.update { it.copy(isLoading = false, videoDetail = localVideoInitial?.toVideos()) }
             }
+
+
+////            // Make decision based on the first emission from local data
+////            val localVideoInitial = videoRepository.getLocalVideoDetail(videoId).firstOrNull()
+////
+////            val needsFetch = if (localVideoInitial == null) {
+////                true
+////            } else {
+////                val lastRefreshed = localVideoInitial.lastRefreshed ?: 0L
+////                (System.currentTimeMillis() - lastRefreshed) >= (24 * 60 * 60 * 1000L) // 24-hour check
+////            }
+////
+////            if (needsFetch) {
+
+////            } else {
+////                // If no fetch is needed, the local observer `observeLocalVideoDetail`
+////                // should have already populated the UI. We just ensure loading is false,
+////                // and explicitly set the video data from our initial check.
+////                _uiState.update { it.copy(isLoading = false, videoDetail = localVideoInitial?.toVideos()) }
+////            }
         }
     }
 
@@ -171,22 +174,22 @@ class VideoDetailViewModel @Inject constructor(
         if (videoId.isNotBlank()) {
             // Force fetch by ignoring timestamp check, directly call repository's remote fetch
             viewModelScope.launch {
-                videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
-                    _uiState.update { currentState ->
-                        when (resource) {
-                            is Resource.Loading -> currentState.copy(isLoading = true, error = null)
-                            is Resource.Success -> currentState.copy(
-                                isLoading = false,
-                                videoDetail = resource.data?.toVideos() ?: currentState.videoDetail,
-                                error = null
-                            )
-                            is Resource.Error -> currentState.copy(
-                                isLoading = false,
-                                error = resource.message ?: "An unknown error occurred"
-                            )
-                        }
-                    }
-                }
+//                videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
+//                    _uiState.update { currentState ->
+//                        when (resource) {
+//                            is Resource.Loading -> currentState.copy(isLoading = true, error = null)
+//                            is Resource.Success -> currentState.copy(
+//                                isLoading = false,
+//                                videoDetail = resource.data?.toVideos() ?: currentState.videoDetail,
+//                                error = null
+//                            )
+//                            is Resource.Error -> currentState.copy(
+//                                isLoading = false,
+//                                error = resource.message ?: "An unknown error occurred"
+//                            )
+//                        }
+//                    }
+//                }
             }
             fetchGatherList()
         }
@@ -196,89 +199,25 @@ class VideoDetailViewModel @Inject constructor(
      * 加载观看历史
      */
     private fun loadWatchHistory() {
-        viewModelScope.launch {
-//            try {
-//                val watchHistory = watchHistoryRepository.getWatchHistoryById(videoId)
-//                ////Log.d("VideoDetailViewModel", "Watch history loaded: $watchHistory")
-//
-//                if (watchHistory != null) {
-//                    _uiState.update {
-//                        it.copy(
-//                            watchHistory = watchHistory,
-//                            lastPlayedPosition = watchHistory.lastPlayedPosition
-//                        )
-//                    }
-//                }
-//            } catch (e: Exception) {
-//                Log.e("VideoDetailViewModel", "Error loading watch history", e)
-//            }
-        }
+//        viewModelScope.launch {
+////            try {
+////                val watchHistory = watchHistoryRepository.getWatchHistoryById(videoId)
+////                ////Log.d("VideoDetailViewModel", "Watch history loaded: $watchHistory")
+////
+////                if (watchHistory != null) {
+////                    _uiState.update {
+////                        it.copy(
+////                            watchHistory = watchHistory,
+////                            lastPlayedPosition = watchHistory.lastPlayedPosition
+////                        )
+////                    }
+////                }
+////            } catch (e: Exception) {
+////                Log.e("VideoDetailViewModel", "Error loading watch history", e)
+////            }
+//        }
     }
 
-//    /**
-//     * 加载视频的服务商列表
-//     * 从视频详情中获取服务商列表
-//     */
-//    fun loadGathers() {
-//        _uiState.update { it.copy(isLoadingGathers = true) }
-//
-//        viewModelScope.launch {
-//            // 从视频详情中获取服务商列表
-//            val videoDetail = uiState.value.videoDetail
-//            if (videoDetail != null) {
-//                // 从视频详情中获取服务商列表
-//                val gathers = videoDetail.gatherList
-//                ////Log.d("VideoDetailViewModel", "Gathers loaded from video detail: ${gathers.size}")
-//
-//                // 获取历史记录中的服务商ID
-//                //val historyGatherId = uiState.value.watchHistory?.gatherId
-//
-//                // 如果有历史记录且服务商存在，选择该服务商
-//                val selectedGatherId = gathers?.firstOrNull()?.gatherId
-//
-//                _uiState.update {
-//                    it.copy(
-//                        gathers = gathers?:emptyList(),
-//                        selectedGatherId = selectedGatherId,
-//                        isLoadingGathers = false
-//                    )
-//                }
-//
-//                // 如果有选中的服务商，自动加载播放地址
-//                selectedGatherId?.let { gatherId ->
-//                    loadPlayers(gatherId)
-//                }
-//            } else {
-//
-//                videoRepository.getGatherList(videoId).collectLatest { resource ->
-//                    _uiState.update { currentState ->
-//                        when (resource) {
-//                            is Resource.Loading -> currentState.copy(
-//                                isLoadingGathers = true,
-//                                error = null
-//                            )
-//                            is Resource.Success -> currentState.copy(
-//                                isLoadingGathers = false,
-//                                gathers = resource.data ?: emptyList(),
-//                                selectedGatherId = resource.data?.first()?.gatherId,
-//                                players = resource.data?.first()?.playList ?: emptyList(),
-//                                selectedPlayerUrl = resource.data?.first()?.playList?.first()?.playUrl,
-//                                isLoadingPlayers = false,
-//                                error = null
-//                            )
-//                            is Resource.Error -> currentState.copy(
-//                                isLoadingGathers = false,
-//                                error = resource.message
-//                            )
-//                        }
-//                    }
-//                }
-//
-//
-//
-//            }
-//        }
-//    }
 
     /**
      * 加载服务商的播放地址列表
@@ -447,59 +386,60 @@ class VideoDetailViewModel @Inject constructor(
      * 加载推荐视频
      */
     fun loadRecommendedVideos() {
-        // Ensure videoId is valid before proceeding.
-        if (videoId.isBlank()) {
-            _uiState.update { it.copy(isLoadingRecommendations = false, error = "Cannot load recommendations without videoId") }
-            return
-        }
-
-        // Set initial loading state
-        _uiState.update { it.copy(isLoadingRecommendations = true, error = null) }
-
-        viewModelScope.launch {
-            // It's safer to get the most recent videoDetail state within the coroutine
-            val currentVideo = _uiState.value.videoDetail
-
-            if (currentVideo == null || currentVideo.id.isNullOrEmpty()) {
-                _uiState.update { it.copy(isLoadingRecommendations = false, error = "Video details not available for recommendations.") }
-                return@launch
-            }
-
-            // Ensure categoryId is not null or blank; if it is, recommendations might not be relevant or possible.
-            val categoryId = currentVideo.categoryId
-            if (categoryId.isNullOrBlank()) {
-                _uiState.update { it.copy(isLoadingRecommendations = false, recommendedVideos = emptyList(), error = "Video category not available for recommendations.") }
-                return@launch
-            }
-
-            val tags = currentVideo.tags
-            val region = currentVideo.region
-            val limit = 10 // Define limit
-
-            videoRepository.getYouLikeMoreVideos(
-                categoryId = categoryId,
-                tagsCsv = tags,
-                regionCsv = region,
-                limit = limit,
-                currentVideoId = videoId // Use the videoId from SavedStateHandle
-            ).collectLatest { resource ->
-                _uiState.update { currentState ->
-                    when (resource) {
-                        is Resource.Loading -> currentState.copy(isLoadingRecommendations = true)
-                        is Resource.Success -> currentState.copy(
-                            isLoadingRecommendations = false,
-                            recommendedVideos = resource.data ?: emptyList(),
-                            error = null // Clear previous error
-                        )
-                        is Resource.Error -> currentState.copy(
-                            isLoadingRecommendations = false,
-                            recommendedVideos = emptyList(), // Clear recommendations on error
-                            error = resource.message ?: "Failed to load recommendations"
-                        )
-                    }
-                }
-            }
-        }
+        _uiState.update { it.copy(isLoadingRecommendations = false, error = "Cannot load recommendations without videoId") }
+//        // Ensure videoId is valid before proceeding.
+//        if (videoId.isBlank()) {
+//            _uiState.update { it.copy(isLoadingRecommendations = false, error = "Cannot load recommendations without videoId") }
+//            return
+//        }
+//
+//        // Set initial loading state
+//        _uiState.update { it.copy(isLoadingRecommendations = true, error = null) }
+//
+//        viewModelScope.launch {
+//            // It's safer to get the most recent videoDetail state within the coroutine
+//            val currentVideo = _uiState.value.videoDetail
+//
+//            if (currentVideo == null || currentVideo.id.isNullOrEmpty()) {
+//                _uiState.update { it.copy(isLoadingRecommendations = false, error = "Video details not available for recommendations.") }
+//                return@launch
+//            }
+//
+//            // Ensure categoryId is not null or blank; if it is, recommendations might not be relevant or possible.
+//            val categoryId = currentVideo.categoryId
+//            if (categoryId.isNullOrBlank()) {
+//                _uiState.update { it.copy(isLoadingRecommendations = false, recommendedVideos = emptyList(), error = "Video category not available for recommendations.") }
+//                return@launch
+//            }
+//
+//            val tags = currentVideo.tags
+//            val region = currentVideo.region
+//            val limit = 10 // Define limit
+//
+////            videoRepository.getYouLikeMoreVideos(
+////                categoryId = categoryId,
+////                tagsCsv = tags,
+////                regionCsv = region,
+////                limit = limit,
+////                currentVideoId = videoId // Use the videoId from SavedStateHandle
+////            ).collectLatest { resource ->
+////                _uiState.update { currentState ->
+////                    when (resource) {
+////                        is Resource.Loading -> currentState.copy(isLoadingRecommendations = true)
+////                        is Resource.Success -> currentState.copy(
+////                            isLoadingRecommendations = false,
+////                            recommendedVideos = resource.data ?: emptyList(),
+////                            error = null // Clear previous error
+////                        )
+////                        is Resource.Error -> currentState.copy(
+////                            isLoadingRecommendations = false,
+////                            recommendedVideos = emptyList(), // Clear recommendations on error
+////                            error = resource.message ?: "Failed to load recommendations"
+////                        )
+////                    }
+////                }
+////            }
+//        }
     }
 
 

@@ -128,24 +128,18 @@ fun VideoDetailScreen(
 
     LaunchedEffect(videoDetail) {
         videoDetail?.let { detail ->
-            if (uiState.gathers.isNotEmpty()) {
-                playerViewModel.initializePlaylist(detail, uiState.gathers)
+            if (detail.gatherList?.isNotEmpty() == true) {
+                playerViewModel.initializePlaylist(detail, detail.gatherList!!)
             }
         }
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
 
         if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            CircularProgressIndicator()
         } else if (uiState.error != null) {
             Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error) // Replace "Error: " with stringResource
             Button(onClick = { viewModel.retryFetch() }) {
@@ -153,7 +147,6 @@ fun VideoDetailScreen(
             }
         } else {
             videoDetail?.let { detail ->
-
                 if (playerUiState.isFullscreen) {
                     VideoPlayerView(
                         isFullscreen = playerUiState.isFullscreen,

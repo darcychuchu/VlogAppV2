@@ -11,7 +11,7 @@ import retrofit2.http.Query
 interface VideoService {
 
     @GET(Constants.ENDPOINT_VIDEO_FILTER)
-    suspend fun getVideos(
+    suspend fun getVideosFilter(
         @Query("typed") typed: Int = 0,
         @Query("cate") cate: String? = null,
         @Query("year") year: Int = 0,
