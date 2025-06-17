@@ -7,7 +7,7 @@ object Constants {
     const val VLOG_APP = "https://66log.com"
     const val API_BASE_URL = "${VLOG_APP}/api/json/v2/"
 
-    const val APP_VERSION = "2.0.1"
+    const val APP_VERSION = "2.0.7"
 
     // update
     const val ENDPOINT_CHECK_UPDATE = "app/version"

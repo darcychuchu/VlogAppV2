@@ -6,10 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -128,11 +126,9 @@ class AppUpdateViewModel @Inject constructor(
      * 判断是否有新版本
      */
     private fun hasNewVersion(latestVersion: AppVersion): Boolean {
-        val currentVersionCode = 1
-        val currentVersionName = APP_VERSION
-
-        return latestVersion.versionCode > currentVersionCode ||
-               latestVersion.versionName != currentVersionName
+        val currentVersionCode = currentVersion.value.versionCode
+        val currentVersionName = currentVersion.value.versionName
+        return latestVersion.versionCode > currentVersionCode && latestVersion.versionName != currentVersionName
     }
 
     /**
@@ -608,23 +604,7 @@ class AppUpdateViewModel @Inject constructor(
     }
 }
 
-// Extension for DownloadCompletionReceiver unregistration
-private fun AppUpdateViewModel.DownloadCompletionReceiver.unregister() {
-//    if (this@AppUpdateViewModel.downloadReceiver == null) {
-//         Log.d(AppUpdateViewModel.TAG, "DownloadCompletionReceiver already unregistered or never registered (receiver is null).")
-//    }else{
-//        try {
-//            this@AppUpdateViewModel.context.unregisterReceiver(this)
-//            Log.i(AppUpdateViewModel.TAG, "DownloadCompletionReceiver unregistered successfully.")
-//        } catch (e: IllegalArgumentException) {
-//            Log.w(AppUpdateViewModel.TAG, "DownloadCompletionReceiver already unregistered? ${e.message}")
-//        } catch (e: Exception) {
-//            Log.e(AppUpdateViewModel.TAG, "Error unregistering DownloadCompletionReceiver", e)
-//        }
-//    }
-//
-//    this@AppUpdateViewModel.downloadReceiver = null
-}
+private fun AppUpdateViewModel.DownloadCompletionReceiver.unregister() { }
 
 /**
  * 应用更新UI状态

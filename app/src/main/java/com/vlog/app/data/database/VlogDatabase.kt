@@ -16,8 +16,6 @@ import com.vlog.app.data.histories.search.SearchHistoryDao
 import com.vlog.app.data.histories.search.SearchHistoryEntity
 import com.vlog.app.data.histories.watch.WatchHistoryDao
 import com.vlog.app.data.histories.watch.WatchHistoryEntity
-import com.vlog.app.data.videos.GatherItemDao
-import com.vlog.app.data.videos.GatherItemEntity
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoEntity
 
@@ -28,11 +26,10 @@ import com.vlog.app.data.videos.VideoEntity
         FavoritesEntity::class,
         WatchHistoryEntity::class,
         SearchHistoryEntity::class,
-        GatherItemEntity::class,
         CommentEntity::class,
         FilterUrlCacheEntity::class // Added FilterUrlCacheEntity
     ],
-    version = 3, // Incremented version for schema change
+    version = 1, // Incremented version for schema change
     exportSchema = false
 )
 abstract class VlogDatabase : RoomDatabase() {
@@ -42,7 +39,6 @@ abstract class VlogDatabase : RoomDatabase() {
     abstract fun favoritesDao(): FavoritesDao
     abstract fun watchHistoryDao(): WatchHistoryDao
     abstract fun searchHistoryDao(): SearchHistoryDao
-    abstract fun gatherItemDao(): GatherItemDao
     abstract fun commentDao(): CommentDao
     abstract fun filterUrlCacheDao(): FilterUrlCacheDao // Added FilterUrlCacheDao accessor
 

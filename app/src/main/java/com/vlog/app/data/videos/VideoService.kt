@@ -21,14 +21,6 @@ interface VideoService {
         @Query("token") token: String? = null
     ): ApiResponse<PaginatedResponse<Videos>>
 
-    @GET(Constants.ENDPOINT_VIDEO_SEARCH)
-    suspend fun searchVideos(
-        @Query("key") searchKey: String,
-        @Query("page") page: Int = 1,
-        @Query("size") size: Int = 24,
-        @Query("token") token: String? = null
-    ): ApiResponse<PaginatedResponse<Videos>>
-
     @GET(Constants.ENDPOINT_VIDEO_DETAIL)
     suspend fun getVideoDetail(
         @Path("videoId") videoId: String,
@@ -39,5 +31,5 @@ interface VideoService {
     suspend fun getGatherList(
         @Path("videoId") videoId: String,
         @Query("gather_version") gatherVersion: Int
-    ): ApiResponse<GatherItem>
+    ): ApiResponse<Videos>
 }
