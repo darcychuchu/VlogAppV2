@@ -45,7 +45,7 @@ fun CommonTopBar(
         title = { Text(text = title) },
         navigationIcon = {
             // 左侧Logo
-            IconButton(onClick = { /* 点击Logo的操作，可以导航到首页 */ }) {
+            IconButton(onClick = { navController.navigate("home") }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_logo),
                     contentDescription = "Logo",

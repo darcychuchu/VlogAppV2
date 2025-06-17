@@ -139,11 +139,21 @@ fun VideoDetailScreen(
     ) {
 
         if (uiState.isLoading) {
-            CircularProgressIndicator()
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
         } else if (uiState.error != null) {
-            Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error) // Replace "Error: " with stringResource
-            Button(onClick = { viewModel.retryFetch() }) {
-                Text("Retry") // Replace "Retry" with stringResource
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error) // Replace "Error: " with stringResource
+                Button(onClick = { viewModel.retryFetch() }) {
+                    Text("Retry") // Replace "Retry" with stringResource
+                }
             }
         } else {
             videoDetail?.let { detail ->
@@ -165,6 +175,7 @@ fun VideoDetailScreen(
                         onNext = { playerViewModel.playNext() },
                         hasPrevious = playerViewModel.hasPrevious(),
                         hasNext = playerViewModel.hasNext(),
+                        currentTitle = videoDetail.title,
                         currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
                         currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
                         modifier = Modifier.fillMaxSize(),
@@ -186,10 +197,14 @@ fun VideoDetailScreen(
                             )
                         }
                     ) { paddingValues ->
-                        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)
+                        Box(modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
                             ) {
                                 VideoPlayerView(
                                     isFullscreen = playerUiState.isFullscreen,
@@ -208,6 +223,7 @@ fun VideoDetailScreen(
                                     onNext = { playerViewModel.playNext() },
                                     hasPrevious = playerViewModel.hasPrevious(),
                                     hasNext = playerViewModel.hasNext(),
+                                    currentTitle = videoDetail.title,
                                     currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
                                     currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
                                     modifier = Modifier.fillMaxWidth()
@@ -215,7 +231,9 @@ fun VideoDetailScreen(
 
 
                                 Column(
-                                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp)
                                 ) {
 
                                     // 播放控制区域
@@ -342,7 +360,7 @@ fun VideoDetailScreen(
                                         videos = uiState.recommendedVideos,
                                         isLoading = uiState.isLoadingRecommendations,
                                         onVideoClick = { videoId ->
-                                            navController.navigate("filter_detail/$videoId")
+                                            navController.navigate("video_detail/$videoId")
                                         }
                                     )
 
@@ -477,14 +495,49 @@ fun VideoDetailContent(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            videoDetail.releasedAt?.let {
+            videoDetail.publishedAt?.let {
                 Text(
-                    text = "年份: $it",
+                    text = "上映日期: $it",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
+//        videoDetail.director?.let {
+//            Spacer(modifier = Modifier.width(16.dp))
+//            Text(
+//                text = "导演: ${videoDetail.director}",
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
+//
+//        }
+//
+//        videoDetail.author?.let {
+//            Spacer(modifier = Modifier.width(16.dp))
+//            Text(
+//                text = "编剧: $it",
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
+//        }
+//
+//        videoDetail.actors?.let {
+//            Spacer(modifier = Modifier.width(16.dp))
+//
+//            Text(
+//                text = "演员",
+//                style = MaterialTheme.typography.titleMedium,
+//                fontWeight = FontWeight.Bold
+//            )
+//
+//            Spacer(modifier = Modifier.height(4.dp))
+//
+//            Text(
+//                text = " ${videoDetail.actors}",
+//                style = MaterialTheme.typography.bodyMedium
+//            )
+//        }
 
         Spacer(modifier = Modifier.height(16.dp))
 

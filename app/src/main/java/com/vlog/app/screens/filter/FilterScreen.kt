@@ -146,7 +146,7 @@ fun FilterScreen(
 
                                 VideoItem(
                                     video = video,
-                                    onClick = { navController.navigate("filter_detail/${video.id}") },
+                                    onClick = { navController.navigate("video_detail/${video.id}") },
                                     navController = navController, // Pass NavController
                                     favoriteViewModel = favoriteViewModel
                                 )

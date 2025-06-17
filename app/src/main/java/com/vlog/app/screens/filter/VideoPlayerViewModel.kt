@@ -378,10 +378,10 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
 
-    fun setPlaybackSpeed(speed: Float) {
-        _exoPlayer?.setPlaybackSpeed(speed)
-        _uiState.update { it.copy(playbackSpeed = speed) }
-    }
+//    fun setPlaybackSpeed(speed: Float) {
+//        _exoPlayer?.setPlaybackSpeed(speed)
+//        _uiState.update { it.copy(playbackSpeed = speed) }
+//    }
 
     fun setError(error: String?) { // Should ideally be handled by Player.Listener
         _uiState.update { it.copy(error = error) }
@@ -416,23 +416,23 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 加载观看历史
-     */
-    fun loadWatchHistory(videoId: String) {
-        viewModelScope.launch {
-            try {
-                val watchHistory = watchHistoryRepository.getWatchHistoryById(videoId)
-                if (watchHistory != null) {
-                    _uiState.update { it.copy(watchHistory = watchHistory) }
-
-                    setCurrentGatherAndEpisode(watchHistory.gatherId, watchHistory.episodeIndex)
-                }
-            } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Error loading watch history", e)
-            }
-        }
-    }
+//    /**
+//     * 加载观看历史
+//     */
+//    fun loadWatchHistory(videoId: String) {
+//        viewModelScope.launch {
+//            try {
+//                val watchHistory = watchHistoryRepository.getWatchHistoryById(videoId)
+//                if (watchHistory != null) {
+//                    _uiState.update { it.copy(watchHistory = watchHistory) }
+//
+//                    setCurrentGatherAndEpisode(watchHistory.gatherId, watchHistory.episodeIndex)
+//                }
+//            } catch (e: Exception) {
+//                Log.e("VideoPlayerViewModel", "Error loading watch history", e)
+//            }
+//        }
+//    }
 
     fun setCurrentGatherAndEpisode(gatherId: String?, episodeIndex: Int?) {
         viewModelScope.launch {
@@ -453,41 +453,41 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 设置当前播放的 gatherId (from deep link or history)
-     */
-    fun setCurrentGather(gatherId: String) { // Renamed for clarity from previous version
-        viewModelScope.launch {
-            val current = _playlistState.value
-            val gatherIndex = current.gatherList.indexOfFirst { it.gatherId == gatherId }
-            if (gatherIndex >= 0) {
-                // Default to first episode of this gather
-                updatePlayerForPlaylistNavigation(gatherIndex, 0, true)
-            }
-        }
-    }
+//    /**
+//     * 设置当前播放的 gatherId (from deep link or history)
+//     */
+//    fun setCurrentGather(gatherId: String) { // Renamed for clarity from previous version
+//        viewModelScope.launch {
+//            val current = _playlistState.value
+//            val gatherIndex = current.gatherList.indexOfFirst { it.gatherId == gatherId }
+//            if (gatherIndex >= 0) {
+//                // Default to first episode of this gather
+//                updatePlayerForPlaylistNavigation(gatherIndex, 0, true)
+//            }
+//        }
+//    }
 
-    /**
-     * 设置当前播放的 episodeIndex (from deep link or history)
-     */
-    fun setCurrentEpisode(episodeIndex: Int) { // Renamed for clarity
-        viewModelScope.launch {
-            val current = _playlistState.value
-            // Assumes current gather is already correct or doesn't need to change
-            updatePlayerForPlaylistNavigation(current.currentGatherIndex, episodeIndex, true)
-        }
-    }
-
-    /**
-     * 设置播放位置 (e.g., from watch history restoration)
-     */
-    fun setPlayPosition(position: Long) {
-        // This should ideally be called AFTER the correct media item is set in ExoPlayer
-        // If ExoPlayer is not ready or has no media, seekTo might be ignored or error.
-        if (_exoPlayer?.playbackState == Player.STATE_READY || _exoPlayer?.playbackState == Player.STATE_BUFFERING || _exoPlayer?.playbackState == Player.STATE_ENDED ) {
-            _exoPlayer?.seekTo(position)
-        }
-        // We update UI state optimistically, or rely on onPositionDiscontinuity listener
-        _uiState.update { it.copy(currentPosition = position) }
-    }
+//    /**
+//     * 设置当前播放的 episodeIndex (from deep link or history)
+//     */
+//    fun setCurrentEpisode(episodeIndex: Int) { // Renamed for clarity
+//        viewModelScope.launch {
+//            val current = _playlistState.value
+//            // Assumes current gather is already correct or doesn't need to change
+//            updatePlayerForPlaylistNavigation(current.currentGatherIndex, episodeIndex, true)
+//        }
+//    }
+//
+//    /**
+//     * 设置播放位置 (e.g., from watch history restoration)
+//     */
+//    fun setPlayPosition(position: Long) {
+//        // This should ideally be called AFTER the correct media item is set in ExoPlayer
+//        // If ExoPlayer is not ready or has no media, seekTo might be ignored or error.
+//        if (_exoPlayer?.playbackState == Player.STATE_READY || _exoPlayer?.playbackState == Player.STATE_BUFFERING || _exoPlayer?.playbackState == Player.STATE_ENDED ) {
+//            _exoPlayer?.seekTo(position)
+//        }
+//        // We update UI state optimistically, or rely on onPositionDiscontinuity listener
+//        _uiState.update { it.copy(currentPosition = position) }
+//    }
 }

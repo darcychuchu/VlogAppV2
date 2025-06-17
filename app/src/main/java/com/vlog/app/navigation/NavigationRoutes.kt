@@ -21,17 +21,17 @@ object NavigationRoutes {
     // 主导航路由
     sealed class MainRoute(val route: String, val resourceId: Int, val icon: ImageVector) {
         object Home : MainRoute(route = "home",resourceId = R.string.home,icon = Icons.Default.Home)
-        object Videos : MainRoute(route = "Videos", resourceId = R.string.videos, icon = Icons.Default.Star)
+        object Videos : MainRoute(route = "videos", resourceId = R.string.videos, icon = Icons.Default.Star)
         object Publish : MainRoute(route = "publish", resourceId = R.string.publish, icon = Icons.Default.Add)
-        object Favorites : MainRoute(route = "Favorites", resourceId = R.string.favorites, icon = Icons.Default.Favorite)
+        object Favorites : MainRoute(route = "favorites", resourceId = R.string.favorites, icon = Icons.Default.Favorite)
         object Profile : MainRoute(route = "profile", resourceId = R.string.profile, icon = Icons.Default.AccountCircle)
     }
 
     // 全屏导航路由
     sealed class FullScreenRoute(val route: String) {
 
-        object FilterDetail : FullScreenRoute("filter_detail/{videoId}") {
-            fun createRoute(videoId: String) = "filter_detail/$videoId"
+        object VideoDetail : FullScreenRoute("video_detail/{videoId}") {
+            fun createRoute(videoId: String) = "video_detail/$videoId"
         }
 
     }
@@ -43,17 +43,17 @@ object NavigationRoutes {
 
     // 其他导航路由
     sealed class OtherRoute(val route: String) {
-//        object Search : OtherRoute("search?query={query}") {
-//            fun createRoute(query: String = ""): String {
-//                return if (query.isNotBlank()) {
-//                    "search?query=${query.encodeUrl()}"
-//                } else {
-//                    "search"
-//                }
-//            }
-//        }
-//        object WatchHistory : OtherRoute("watch_history")
-//        object AppUpdate : OtherRoute("app_update")
+        object Search : OtherRoute("search?query={query}") {
+            fun createRoute(query: String = ""): String {
+                return if (query.isNotBlank()) {
+                    "search?query=${query.encodeUrl()}"
+                } else {
+                    "search"
+                }
+            }
+        }
+        object WatchHistory : OtherRoute("watch_history")
+        object AppUpdate : OtherRoute("app_update")
         object PhotoPublish : OtherRoute("photo_publish")
 
         // 发布相关页面
@@ -82,6 +82,6 @@ object NavigationRoutes {
     // 判断路由是否为全屏路由
     fun isFullScreenRoute(route: String?): Boolean {
         if (route == null) return false
-        return route.startsWith("filter_detail/") || route.startsWith("video_player/") || route.startsWith("video_detail/")
+        return route.startsWith("video_detail/")
     }
 }

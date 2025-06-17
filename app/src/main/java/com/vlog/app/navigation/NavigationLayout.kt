@@ -1,10 +1,8 @@
 package com.vlog.app.navigation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,7 +62,7 @@ fun NavigationLayout(
         }
         NavigationType.FULLSCREEN -> {
             // 全屏导航界面，不包含底部导航栏
-            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 MainNavGraph(navController = navController)
             }
         }

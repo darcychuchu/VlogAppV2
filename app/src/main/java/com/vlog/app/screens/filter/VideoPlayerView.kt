@@ -42,6 +42,7 @@ fun VideoPlayerView(
     onNext: () -> Unit, // Calls ViewModel method
     hasPrevious: Boolean, // From ViewModel
     hasNext: Boolean, // From ViewModel
+    currentTitle: String?, // From ViewModel PlaylistState
     currentGatherTitle: String?, // From ViewModel PlaylistState
     currentPlayTitle: String?, // From ViewModel PlaylistState
     // onOrientationToggle: () -> Unit = {} // REMOVED
@@ -115,6 +116,7 @@ fun VideoPlayerView(
                     val newPosition = (uiState.currentPosition - 10000).coerceAtLeast(0)
                     playerViewModel.seekTo(newPosition)
                 },
+                currentTitle = currentTitle,
                 currentGatherTitle = currentGatherTitle, // From ViewModel via parameter
                 currentPlayTitle = currentPlayTitle,   // From ViewModel via parameter
                 // onOrientationToggle = onOrientationToggle, // REMOVED
@@ -169,38 +171,48 @@ fun VideoPlayerControls(
     onFullscreenToggle: () -> Unit, // Calls ViewModel method
     onFastForward: () -> Unit, // Calls ViewModel method
     onFastRewind: () -> Unit, // Calls ViewModel method
+    currentTitle: String?, // From ViewModel
     currentGatherTitle: String?, // From ViewModel
     currentPlayTitle: String?, // From ViewModel
     // onOrientationToggle: () -> Unit, // REMOVED
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.background(Color.Transparent)) { // Ensure controls background is transparent
+
+
         // 顶部信息栏
-        if (!isFullscreen) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .align(Alignment.TopStart),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    currentGatherTitle?.let { title ->
-                        Text(
-                            text = title,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    currentPlayTitle?.let { title ->
-                        Text(
-                            text = title,
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 12.sp
-                        )
-                    }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .align(Alignment.TopStart),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            if (isFullscreen) {
+                currentTitle?.let { title ->
+                    Text(
+                        text = "$title / ",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
+            }
+            currentGatherTitle?.let { title ->
+                Text(
+                    text = title,
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            currentPlayTitle?.let { title ->
+                Text(
+                    text = " - $title",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 12.sp
+                )
             }
         }
         

@@ -19,8 +19,11 @@ import com.vlog.app.screens.users.UserHomeScreen
 import com.vlog.app.screens.users.UserStoriesDetailScreen
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.vlog.app.screens.profile.profileNavigation
+import com.vlog.app.screens.profile.AppUpdateScreen
+import com.vlog.app.screens.profile.ProfileUserScreen
+import com.vlog.app.screens.profile.WatchHistoryScreen
 import com.vlog.app.screens.publish.PhotoPublishScreen
+import com.vlog.app.screens.search.SearchScreen
 
 /**
  * 主导航图
@@ -42,12 +45,6 @@ fun MainNavGraph(
         addOtherRoutes(navController)
     }
 }
-
-// PlaceholderUserStoriesDetailScreen is no longer needed, it can be removed.
-// @Composable
-// fun PlaceholderUserStoriesDetailScreen(navController: NavHostController, username: String?, storyId: String?) {
-//    Text("User Story Detail for Username: $username, Story ID: $storyId")
-// }
 
 /**
  * 添加主导航路由
@@ -81,46 +78,17 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
                 navController.popBackStack()
             },
             onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId))
+                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
             }
         )
     }
 
-//    composable(
-//        route = "${NavigationRoutes.MainRoute.Profile.route}?username={username}",
-//        arguments = listOf(
-//            navArgument("username") {
-//                type = NavType.StringType
-//                defaultValue = ""
-//                nullable = true
-//            }
-//        )
-//    ) { backStackEntry ->
-//        val username = backStackEntry.arguments?.getString("username") ?: ""
-//        UserHomeScreen(
-//            userName = username,
-//            onNavigateBack = {
-//                navController.popBackStack()
-//            },
-//            navController = navController
-//        )
-//    }
 
-    // profileNavigation 自定义二级导航
-    profileNavigation(
-        onNavigateToLogin = {
-            navController.navigate(NavigationRoutes.OtherRoute.Login.route)
-        },
-        onNavigateToVideoDetail = { videoId ->
-            navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId)) },
-        onNavigateToStoryDetail = { username, storyId ->
-            navController.navigate(NavigationRoutes.OtherRoute.UserStoryDetail.createRoute(username,storyId)) },
-        onNavigateToUserProfile = { username ->
-            navController.navigate(NavigationRoutes.OtherRoute.UserHome.createRoute(username))
-        },
-        onNavigateToFollowers = {  },
-        onNavigateToFollowing = { }
-    )
+    composable(NavigationRoutes.MainRoute.Profile.route) {
+        ProfileUserScreen(
+            navController = navController
+        )
+    }
 
 }
 
@@ -131,7 +99,7 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
 private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController) {
 
     composable(
-        route = "${NavigationRoutes.FullScreenRoute.FilterDetail.route}?videoId={videoId}",
+        route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}",
         arguments = listOf(
             navArgument("videoId") { type = NavType.StringType }
         )
@@ -149,42 +117,49 @@ private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController
  * 添加其他导航路由
  */
 private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
-//    // 观看历史
-//    composable(NavigationRoutes.OtherRoute.WatchHistory.route) {
-//        WatchHistoryScreen(navController = navController)
-//    }
-//
-//    composable(
-//        route = "${NavigationRoutes.OtherRoute.Search.route}?query={query}",
-//        arguments = listOf(
-//            navArgument("query") {
-//                type = NavType.StringType
-//                defaultValue = ""
-//                nullable = true
-//            }
-//        )
-//    ) { backStackEntry ->
-//        val query = backStackEntry.arguments?.getString("query") ?: ""
-//        SearchScreen(
-//            navController = navController,
-//            initialQuery = query,
-//            onNavigateBack = {
-//                navController.popBackStack()
-//            },
-//            onVideoClick = { videoId ->
-//                navController.navigate(NavigationRoutes.FullScreenRoute.FilterDetail.createRoute(videoId))
-//            }
-//        )
-//    }
+    // 观看历史
+    composable(NavigationRoutes.OtherRoute.WatchHistory.route) {
+        WatchHistoryScreen(
+            onNavigateBack = {
+                navController.popBackStack()
+            },
+            onVideoClick = { videoId ->
+                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+            }
+        )
+    }
+
+    composable(
+        route = "${NavigationRoutes.OtherRoute.Search.route}?query={query}",
+        arguments = listOf(
+            navArgument("query") {
+                type = NavType.StringType
+                defaultValue = ""
+                nullable = true
+            }
+        )
+    ) { backStackEntry ->
+        val query = backStackEntry.arguments?.getString("query") ?: ""
+        SearchScreen(
+            navController = navController,
+            initialQuery = query,
+            onNavigateBack = {
+                navController.popBackStack()
+            },
+            onVideoClick = { videoId ->
+                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+            }
+        )
+    }
 
 //    // 版本更新页面
-//    composable(NavigationRoutes.OtherRoute.AppUpdate.route) {
-//        AppUpdateScreen(
-//            onNavigateBack = {
-//                navController.popBackStack()
-//            }
-//        )
-//    }
+    composable(NavigationRoutes.OtherRoute.AppUpdate.route) {
+        AppUpdateScreen(
+            onNavigateBack = {
+                navController.popBackStack()
+            }
+        )
+    }
 
     composable(NavigationRoutes.OtherRoute.PhotoPublish.route) {
         PhotoPublishScreen(

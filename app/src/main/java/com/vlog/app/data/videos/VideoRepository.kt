@@ -19,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class VideoRepository @Inject constructor(
     private val videoService: VideoService,
-    //private val videoDao: VideoDao,
+    private val videoDao: VideoDao,
     //private val gatherItemDao: GatherItemDao,
     //private val filterUrlCacheDao: FilterUrlCacheDao, // Added
     private val moshi: Moshi // Added
@@ -96,8 +96,8 @@ class VideoRepository @Inject constructor(
             if (response.code == 200 && response.data != null) {
                 val apiResponseData = response.data
 //                // Update local DB (existing logic)
-//                val entities = apiResponseData.items?.map { it.toEntity() } ?: emptyList()
-//                videoDao.updateVideosWithVersionCheck(entities)
+                val entities = apiResponseData.items?.map { it.toEntity() } ?: emptyList()
+                videoDao.updateVideosWithVersionCheck(entities)
 //
 //                // Save to Cache
 //                try {
@@ -174,16 +174,18 @@ class VideoRepository @Inject constructor(
 
         result.fold(
             onSuccess = { videoDto ->
-                //val videoEntity = videoDto.toEntity()
+                videoDao.deleteVideoById(videoId)
+                val videoEntity = videoDto.toEntity()
+                videoEntity.lastRefreshed = System.currentTimeMillis()
+                videoDao.insertVideo(videoEntity)
 //                try {
-//                    videoEntity.lastRefreshed = System.currentTimeMillis()
-//                    videoDao.insertVideo(videoEntity)
-//                    emit(Resource.Success(videoEntity))
-//                    return@flow
+//                    //emit(Resource.Success(videoEntity))
+//                    //
 //                } catch (dbException: Exception) {
 //                    emit(Resource.Error("Failed to save video detail to DB: ${dbException.message}", null))
 //                }
                 emit(Resource.Success(videoDto))
+                return@flow
             },
             onFailure = { exception ->
                 emit(Resource.Error("Failed to fetch video detail: ${exception.message}", null))
@@ -250,39 +252,39 @@ class VideoRepository @Inject constructor(
             emit(Resource.Error(e.message ?: "Unknown error fetching gather list", null))
         }
     }.flowOn(Dispatchers.IO)
-//
-//    fun getYouLikeMoreVideos(
-//        categoryId: String,
-//        tagsCsv: String?,
-//        regionCsv: String?,
-//        limit: Int,
-//        currentVideoId: String
-//    ): Flow<Resource<List<Videos>>> = flow {
-//        emit(Resource.Loading())
-//        try {
-//            val parsedTags = tagsCsv?.split('/')
-//                ?.map { it.trim() }
-//                ?.filter { it.isNotBlank() }
-//                ?: emptyList()
-//
-//            val parsedRegions = regionCsv?.split('/')
-//                ?.map { it.trim() }
-//                ?.filter { it.isNotBlank() }
-//                ?: emptyList()
-//
-//            val videoEntities = videoDao.getSimilarVideos(
-//                categoryId = categoryId,
-//                tags = parsedTags,
-//                regions = parsedRegions,
-//                limit = limit,
-//                excludeId = currentVideoId
-//            )
-//
-//            val videos = videoEntities.map { it.toVideos() }
-//            emit(Resource.Success(videos))
-//        } catch (e: Exception) {
-//            // Consider logging the exception e
-//            emit(Resource.Error("Failed to load similar videos: ${e.message}"))
-//        }
-//    }.flowOn(Dispatchers.IO)
+
+    fun getYouLikeMoreVideos(
+        categoryId: String,
+        tagsCsv: String?,
+        regionCsv: String?,
+        limit: Int,
+        currentVideoId: String
+    ): Flow<Resource<List<Videos>>> = flow {
+        emit(Resource.Loading())
+        try {
+            val parsedTags = tagsCsv?.split('/')
+                ?.map { it.trim() }
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
+
+            val parsedRegions = regionCsv?.split('/')
+                ?.map { it.trim() }
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
+
+            val videoEntities = videoDao.getSimilarVideos(
+                categoryId = categoryId,
+                tags = parsedTags,
+                regions = parsedRegions,
+                limit = limit,
+                excludeId = currentVideoId
+            )
+
+            val videos = videoEntities.map { it.toVideos() }
+            emit(Resource.Success(videos))
+        } catch (e: Exception) {
+            // Consider logging the exception e
+            emit(Resource.Error("Failed to load similar videos: ${e.message}"))
+        }
+    }.flowOn(Dispatchers.IO)
 }

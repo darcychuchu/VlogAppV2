@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.vlog.app.navigation.NavigationRoutes
 import com.vlog.app.screens.components.StoryItem
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -51,12 +50,13 @@ import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.vlog.app.navigation.NavigationRoutes
+import com.vlog.app.navigation.NavigationRoutes.OtherRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileUserScreen(
     navController: NavController,
-    onNavigateToLogin: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val isLoggedIn by profileViewModel.isLoggedIn.collectAsState()
@@ -91,15 +91,14 @@ fun ProfileUserScreen(
             if (isLoggedIn) {
                 ProfileLoggedInContent(navController = navController, viewModel = profileViewModel)
             } else {
-                ProfileLoggedOutContent(navController = navController,onNavigateToLogin = onNavigateToLogin)
+                ProfileLoggedOutContent(navController = navController)
             }
         }
     }
 }
 
 @Composable
-fun ProfileLoggedOutContent(navController: NavController,
-                            onNavigateToLogin: () -> Unit) {
+fun ProfileLoggedOutContent(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -116,7 +115,7 @@ fun ProfileLoggedOutContent(navController: NavController,
         Spacer(modifier = Modifier.height(16.dp))
         Text("您尚未登录", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { onNavigateToLogin }) {
+        Button(onClick = { navController.navigate(NavigationRoutes.OtherRoute.Login.route) }) {
             Text("登录 / 注册")
         }
         Spacer(modifier = Modifier.height(32.dp))
@@ -124,17 +123,17 @@ fun ProfileLoggedOutContent(navController: NavController,
         SettingsNavigationItem(
             icon = Icons.Outlined.History,
             text = "观看历史",
-            onClick = { navController.navigate(ProfileScreenRoute.WatchHistory.route) }
+            onClick = { navController.navigate("watch_history") }
         )
         SettingsNavigationItem(
             icon = Icons.Outlined.Search,
             text = "搜索历史",
-            onClick = { navController.navigate(ProfileScreenRoute.Search.createRoute()) }
+            onClick = { navController.navigate("search") }
         )
         SettingsNavigationItem(
             icon = Icons.Outlined.SystemUpdate,
             text = "版本更新",
-            onClick = { navController.navigate(ProfileScreenRoute.AppUpdate.route) }
+            onClick = { navController.navigate("app_update") }
         )
     }
 }
