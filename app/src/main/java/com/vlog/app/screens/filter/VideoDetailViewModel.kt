@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.collections.first
 
 
 @HiltViewModel
@@ -45,9 +46,7 @@ class VideoDetailViewModel @Inject constructor(
 
     init {
         if (videoId.isNotBlank()) {
-            //observeLocalVideoDetail()
             checkAndFetchRemoteVideoDetail()
-            fetchGatherList()
             loadWatchHistory()
             loadComments()
             loadRecommendedVideos() // Removed from here
@@ -69,19 +68,6 @@ class VideoDetailViewModel @Inject constructor(
         }
     }
 
-//    private fun observeLocalVideoDetail() {
-////        viewModelScope.launch {
-//////            videoRepository.getLocalVideoDetail(videoId).collectLatest { localVideo ->
-//////                _uiState.update { currentState ->
-//////                    if (currentState.videoDetail == null || localVideo != currentState.videoDetail) {
-//////                        currentState.copy(videoDetail = localVideo?.toVideos(),isLoading = false)
-//////                    } else {
-//////                        currentState
-//////                    }
-//////                }
-//////            }
-////        }
-//    }
 
     private fun checkAndFetchRemoteVideoDetail() {
         viewModelScope.launch {
@@ -89,12 +75,27 @@ class VideoDetailViewModel @Inject constructor(
             videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
                 _uiState.update { currentState ->
                     when (resource) {
-                        is Resource.Loading -> currentState.copy(isLoading = true) // Can keep it true
-                        is Resource.Success -> currentState.copy(
-                            isLoading = false,
-                            videoDetail = resource.data ?: currentState.videoDetail, // Update with fresh data
-                            error = null
-                        )
+                        is Resource.Loading -> currentState.copy(
+                            isLoading = true,
+                            isLoadingGathers = true
+                        ) // Can keep it true
+                        is Resource.Success -> {
+                            val gatherList = resource.data?.gatherList
+                            val selectedGatherId = gatherList?.first()?.gatherId
+
+                            if (!selectedGatherId.isNullOrEmpty()){
+                                loadPlayers(selectedGatherId, gatherList)
+                            }
+
+                            currentState.copy(
+                                isLoadingGathers = false,
+                                isLoading = false,
+                                videoDetail = resource.data ?: currentState.videoDetail, // Update with fresh data
+                                selectedGatherId = selectedGatherId,
+                                gathers = gatherList ?: emptyList(),
+                                error = null
+                            )
+                        }
                         is Resource.Error -> currentState.copy(
                             isLoading = false,
                             error = resource.message ?: "An unknown error occurred"
@@ -102,69 +103,9 @@ class VideoDetailViewModel @Inject constructor(
                     }
                 }
             }
-
-
-////            // Make decision based on the first emission from local data
-////            val localVideoInitial = videoRepository.getLocalVideoDetail(videoId).firstOrNull()
-////
-////            val needsFetch = if (localVideoInitial == null) {
-////                true
-////            } else {
-////                val lastRefreshed = localVideoInitial.lastRefreshed ?: 0L
-////                (System.currentTimeMillis() - lastRefreshed) >= (24 * 60 * 60 * 1000L) // 24-hour check
-////            }
-////
-////            if (needsFetch) {
-
-////            } else {
-////                // If no fetch is needed, the local observer `observeLocalVideoDetail`
-////                // should have already populated the UI. We just ensure loading is false,
-////                // and explicitly set the video data from our initial check.
-////                _uiState.update { it.copy(isLoading = false, videoDetail = localVideoInitial?.toVideos()) }
-////            }
         }
     }
 
-    private fun fetchGatherList() {
-        if (videoId.isNotBlank()) {
-            viewModelScope.launch {
-                videoRepository.getGatherList(videoId).collectLatest { resource ->
-                    _uiState.update { currentState ->
-                        when (resource) {
-                            is Resource.Loading -> currentState.copy(
-                                isLoadingGathers = true,
-                                error = null
-                            )
-                            is Resource.Success -> {
-                                val gatherList = resource.data
-                                val selectedGatherId = gatherList?.first()?.gatherId
-
-                                if (!selectedGatherId.isNullOrEmpty()){
-                                    loadPlayers(selectedGatherId)
-                                }
-
-                                val videos = uiState.value.videoDetail
-                                if (videos?.gatherList.isNullOrEmpty()){
-                                    videos?.gatherList?.addAll(gatherList?:emptyList())
-                                }
-
-                                currentState.copy(
-                                    isLoadingGathers = false,
-                                    gathers = gatherList ?: emptyList(),
-                                    selectedGatherId = selectedGatherId,
-                                    error = null
-                                )
-                            }
-                            is Resource.Error -> currentState.copy(
-                                isLoadingGathers = false,
-                                error = resource.message
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     fun retryFetch() {
         if (videoId.isNotBlank()) {
@@ -173,13 +114,26 @@ class VideoDetailViewModel @Inject constructor(
                 videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
                     _uiState.update { currentState ->
                         when (resource) {
-                            is Resource.Loading -> currentState.copy(isLoading = true, error = null)
-                            is Resource.Success -> currentState.copy(
-                                isLoading = false,
-                                videoDetail = resource.data ?: currentState.videoDetail,
-                                error = null
-                            )
+                            is Resource.Loading -> currentState.copy(
+                                isLoadingGathers = true, isLoading = true, error = null)
+                            is Resource.Success -> {
+                                val gatherList = resource.data?.gatherList
+                                val selectedGatherId = gatherList?.first()?.gatherId
+
+                                if (!selectedGatherId.isNullOrEmpty()){
+                                    loadPlayers(selectedGatherId, gatherList)
+                                }
+                                currentState.copy(
+                                    isLoadingGathers = false,
+                                    isLoading = false,
+                                    videoDetail = resource.data ?: currentState.videoDetail, // Update with fresh data
+                                    selectedGatherId = selectedGatherId,
+                                    gathers = gatherList ?: emptyList(),
+                                    error = null
+                                )
+                            }
                             is Resource.Error -> currentState.copy(
+                                isLoadingGathers = false,
                                 isLoading = false,
                                 error = resource.message ?: "An unknown error occurred"
                             )
@@ -187,7 +141,6 @@ class VideoDetailViewModel @Inject constructor(
                     }
                 }
             }
-            fetchGatherList()
         }
     }
 
@@ -218,12 +171,10 @@ class VideoDetailViewModel @Inject constructor(
      * 加载服务商的播放地址列表
      * 从视频详情中获取播放地址列表
      */
-    fun loadPlayers(gatherId: String) {
+    fun loadPlayers(gatherId: String, gatherList: List<GatherList>) {
         _uiState.update { it.copy(isLoadingPlayers = true, selectedGatherId = gatherId) }
 
         viewModelScope.launch {
-            // 从视频详情中获取播放地址列表
-            val gatherList = uiState.value.gathers
             val playList = gatherList.find { it.gatherId == gatherId }?.playList ?: emptyList()
             val selectedPlayerUrl = playList.firstOrNull()?.playUrl
             val selectedPlayer = playList.find { it.playUrl == selectedPlayerUrl }
@@ -250,54 +201,7 @@ class VideoDetailViewModel @Inject constructor(
             }
         }
     }
-//
-//    /**
-//     * 选择播放地址
-//     */
-//    fun selectPlayerUrl(playerUrl: String, playerTitle: String? = null) {
-//        _uiState.update { it.copy(selectedPlayerUrl = playerUrl) }
-//
-//        // 记录观看历史
-//        uiState.value.videoDetail?.let { videoDetail ->
-//            viewModelScope.launch {
-//                // 获取当前服务商信息
-//                val gatherId = uiState.value.selectedGatherId
-//                val gatherName = uiState.value.gathers.find { it.gatherId == gatherId }?.gatherTitle
-//
-//                watchHistoryRepository.addWatchHistoryFromVideoDetail(
-//                    videoDetail = videoDetail,
-//                    playPosition = 0, // 新选择的剧集从头开始播放
-//                    duration = 0,
-//                    episodeTitle = playerTitle,
-//                    gatherId = gatherId,
-//                    gatherName = gatherName,
-//                    playerUrl = playerUrl
-//                )
-//            }
-//        }
-//    }
 
-
-//    /**
-//     * 更新播放进度
-//     */
-//    fun updatePlayProgress(playPosition: Long, duration: Long) {
-//        viewModelScope.launch {
-//            // 获取当前服务商和播放地址信息
-//            val gatherId = uiState.value.selectedGatherId
-//            val gatherName = uiState.value.gathers.find { it.gatherId == gatherId }?.gatherTitle
-//            val playerUrl = uiState.value.selectedPlayerUrl
-//
-//            watchHistoryRepository.updatePlayProgress(
-//                videoId = videoId,
-//                playPosition = playPosition,
-//                duration = duration,
-//                gatherId = gatherId,
-//                gatherName = gatherName,
-//                playerUrl = playerUrl
-//            )
-//        }
-//    }
 
     /**
      * 加载评论
