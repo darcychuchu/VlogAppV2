@@ -52,6 +52,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import android.util.Log
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
@@ -63,6 +65,7 @@ import com.vlog.app.screens.components.RecommendedVideos
 import com.vlog.app.screens.favorites.FavoriteViewModel
 import com.vlog.app.screens.users.UserViewModel // Added UserViewModel import
 import kotlinx.coroutines.flow.map // Added for map operator
+import kotlinx.coroutines.launch
 
 
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -299,7 +302,20 @@ fun VideoDetailScreen(
                                                             modifier = Modifier.padding(bottom = 8.dp)
                                                         )
 
+                                                        val playListState = rememberLazyListState()
+                                                        val playCoroutineScope = rememberCoroutineScope()
+
+                                                        // 自动滚动到当前播放的集数
+                                                        LaunchedEffect(playlistState.currentPlayIndex) {
+                                                            if (playlistState.currentPlayIndex >= 0 && playlistState.currentPlayIndex < playlistState.currentPlayList.size) {
+                                                                playCoroutineScope.launch {
+                                                                    playListState.animateScrollToItem(playlistState.currentPlayIndex)
+                                                                }
+                                                            }
+                                                        }
+
                                                         LazyRow(
+                                                            state = playListState,
                                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                         ) {
                                                             itemsIndexed(playlistState.currentPlayList) { index, playItem ->

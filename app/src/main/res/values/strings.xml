@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">18log.com</string>
+    <string name="app_name">VLOG</string>
 
     <!-- Bottom Navigation -->
     <string name="home">首页</string>

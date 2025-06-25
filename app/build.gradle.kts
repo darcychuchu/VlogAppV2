@@ -14,8 +14,8 @@ android {
         applicationId = "com.vlog.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 9
-        versionName = "2.0.7"
+        versionCode = 12
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -23,7 +23,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true  // 改为true启用代码优化 ，打包apk
-            isShrinkResources = true  // 添加这行启用资源压缩 ，打包apk
+            isShrinkResources = false  // 添加这行启用资源压缩 ，打包apk
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

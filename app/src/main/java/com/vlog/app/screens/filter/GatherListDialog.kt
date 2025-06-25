@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -21,6 +23,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +36,18 @@ fun GatherListDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lazyListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // 自动滚动到当前播放的集数
+    LaunchedEffect(currentGatherIndex) {
+        if (currentGatherIndex >= 0 && currentGatherIndex < gatherList.size) {
+            coroutineScope.launch {
+                lazyListState.animateScrollToItem(currentGatherIndex)
+            }
+        }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -80,10 +95,11 @@ fun GatherListDialog(
                 // 集数列表
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    state = lazyListState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(gatherList) { gatherIndex, gather ->
+                    lazyItemsIndexed(gatherList) { gatherIndex, gather ->
                         GatherItem(
                             gather = gather,
                             gatherIndex = gatherIndex,
@@ -208,8 +224,52 @@ fun GatherItem(
 
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
+//                val playListState = rememberLazyGridState()
+//                val playCoroutineScope = rememberCoroutineScope()
+//
+//                // 自动滚动到当前播放的播放源
+//                LaunchedEffect(currentPlayIndex, isSelected) {
+//                    if (isSelected && currentPlayIndex >= 0 && currentPlayIndex < gather.playList.size) {
+//                        playCoroutineScope.launch {
+//                            playListState.animateScrollToItem(currentPlayIndex)
+//                        }
+//                    }
+//                }
+//
+//                LazyVerticalGrid(
+//                    columns = GridCells.Fixed(4),
+//                    state = playListState,
+//                    verticalArrangement = Arrangement.spacedBy(8.dp),
+//                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+//                ) {
+//
+//                    lazyGridItemsIndexed(gather.playList) { playIndex, playSource ->
+//                        PlaySourceChip(
+//                            playSource = playSource,
+//                            isSelected = isSelected && playIndex == currentPlayIndex,
+//                            onClick = {
+//                                onPlaySourceSelected(playIndex)
+//                            }
+//                        )
+//                    }
+//                }
+
+
+                val playListState = rememberLazyListState()
+                val playCoroutineScope = rememberCoroutineScope()
+
+                // 自动滚动到当前播放的播放源
+                LaunchedEffect(currentPlayIndex, isSelected) {
+                    if (isSelected && currentPlayIndex >= 0 && currentPlayIndex < gather.playList.size) {
+                        playCoroutineScope.launch {
+                            playListState.animateScrollToItem(currentPlayIndex)
+                        }
+                    }
+                }
+
                 LazyRow(
+                    state = playListState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(gather.playList) { playIndex, playSource ->
