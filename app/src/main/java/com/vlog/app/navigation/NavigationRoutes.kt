@@ -68,6 +68,9 @@ object NavigationRoutes {
         // 认证相关页面
         object Login : OtherRoute("login")
         object Register : OtherRoute("register")
+        
+        // 设置相关页面
+        object CategorySettings : OtherRoute("category_settings")
     }
 
     // 底部导航项
