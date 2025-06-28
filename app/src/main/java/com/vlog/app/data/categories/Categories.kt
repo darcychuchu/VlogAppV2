@@ -7,6 +7,8 @@ import com.squareup.moshi.Json
  */
 data class Categories(
     var id: String,
+    var isLocked: Int = 0,
+    var isEnabled: Int = 0,
     var orderSort: Int = 0,
     val version: Int = 0,
     val parentId: String? = null,
