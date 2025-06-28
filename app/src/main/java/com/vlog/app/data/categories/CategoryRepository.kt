@@ -146,6 +146,8 @@ class CategoryRepository @Inject constructor(
                 modelId = categories.modelId,
                 modelTyped = categories.modelTyped,
                 orderSort = categories.orderSort,
+                isLocked = categories.isLocked,
+                isEnabled = categories.isEnabled,
                 lastUpdated = System.currentTimeMillis()
             )
 

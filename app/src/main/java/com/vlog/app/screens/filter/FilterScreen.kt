@@ -27,6 +27,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import android.util.Log
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +114,54 @@ fun FilterScreen(
                     modifier = Modifier.padding(8.dp)
                 )
 
+                // 登录提示（页面内显示）
+                uiState.loginRequiredMessage?.let { message ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "需要登录",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = message,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+
+                            Row {
+                                IconButton(
+                                    onClick = { viewModel.clearLoginRequiredMessage() }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "关闭",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Results
                 when {
                     uiState.isLoading -> {
@@ -118,6 +173,7 @@ fun FilterScreen(
                             onRetry = { viewModel.applyFilters() }
                         )
                     }
+
                     uiState.videos.isEmpty() -> {
                         Box(
                             modifier = Modifier
@@ -218,6 +274,8 @@ fun FilterOptions(
                     label = { Text(category.name, style = MaterialTheme.typography.bodySmall) }
                 )
             }
+
+            ///
         }
 
         // 子分类选择（如果有）
@@ -284,3 +342,4 @@ fun FilterOptions(
 
     }
 }
+

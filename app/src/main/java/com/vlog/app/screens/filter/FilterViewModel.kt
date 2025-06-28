@@ -66,10 +66,13 @@ class FilterViewModel @Inject constructor(
                 // 从数据库获取主分类
                 val mainCategories = categoryRepository.getMainCategories().first()
 
-                // 将主分类转换为 FilterItem 列表
-                val filterItems = mainCategories.map {
-                    FilterItem(it.id, it.title)
-                }
+                // 将主分类转换为 FilterItem 列表，过滤掉不显示的分类（isEnabled == 1）
+                val filterItems = mainCategories
+                    .filter { it.isEnabled == 0 } // 只显示 isEnabled 为 0 的分类
+                    .map {
+                        FilterItem(it.id, it.title, it.isLocked == 1)
+                    }
+
 
                 // 更新 UI 状态
                 _uiState.update {
@@ -82,7 +85,9 @@ class FilterViewModel @Inject constructor(
                             filterItems.firstOrNull() ?: it.selectedCategory
                         }
                     )
+
                 }
+
 
                 // 加载选中分类的子分类
                 loadSubCategories(_uiState.value.selectedCategory.id)
@@ -95,12 +100,17 @@ class FilterViewModel @Inject constructor(
     }
 
     fun updateFilter(section: FilterSection, item: FilterItem) {
+        if (item.isLocked){
+            _uiState.update { it.copy(loginRequiredMessage = "此分类需要登录后才能浏览") }
+            return
+        }
+
         _uiState.update { state ->
             when (section.param) {
                 "typed" -> {
                     // 当选择了新的分类时，加载子分类
                     loadSubCategories(item.id)
-                    state.copy(selectedCategory = item, selectedSubCategory = null)
+                    state.copy(selectedCategory = item, selectedSubCategory = null, loginRequiredMessage = null)
                 }
                 "year" -> state.copy(selectedYear = item)
                 "order_by" -> state.copy(selectedOrderBy = item)
@@ -126,9 +136,13 @@ class FilterViewModel @Inject constructor(
                 // 将子分类转换为 FilterItem 列表
                 val filterItems = mutableListOf<FilterItem>()
 
-                // 只有当有子分类时才添加“全部”选项
+                // 只有当有子分类时才添加"全部"选项，过滤掉不显示的分类（isEnabled == 1）
                 if (subCategories.isNotEmpty()) {
-                    filterItems.addAll(subCategories.map { FilterItem(it.id, it.title) })
+                    filterItems.addAll(
+                        subCategories
+                            .filter { it.isEnabled == 0 } // 只显示 isEnabled 为 0 的分类
+                            .map { FilterItem(it.id, it.title, it.isLocked == 1) }
+                    )
                 }
 
                 _uiState.update {
@@ -167,6 +181,21 @@ class FilterViewModel @Inject constructor(
 
     fun applyFilters() {
         loadFilteredVideos()
+    }
+
+    /**
+     * 清除登录提示消息
+     */
+    fun clearLoginRequiredMessage() {
+        _uiState.update { it.copy(loginRequiredMessage = null) }
+    }
+
+    /**
+     * 重新加载分类配置
+     * 当分类设置更改后调用此方法刷新分类列表
+     */
+    fun reloadCategoryConfig() {
+        loadMainCategories()
     }
 
     /**
@@ -333,6 +362,7 @@ data class FilterUiState(
     val isLoadingCategories: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,
+    val loginRequiredMessage: String? = null,
     val currentPage: Int = 1,
     val canLoadMore: Boolean = true
 )
@@ -345,7 +375,8 @@ data class FilterSection(
 
 data class FilterItem(
     val id: String,
-    val name: String
+    val name: String,
+    val isLocked: Boolean = false
 )
 
 object DefaultFilterConfig {
