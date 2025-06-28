@@ -241,10 +241,6 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
     ) { backStackEntry ->
         val username = backStackEntry.arguments?.getString("username")
         val storyId = backStackEntry.arguments?.getString("storyId")
-        // It's good practice to handle cases where arguments might be unexpectedly null,
-        // though NavType.StringType without nullable = true should ensure storyId is present.
-        // Username is explicitly nullable as per navArgument, UserStoriesDetailScreen takes nullable username.
-        // StoryId should be non-null as it's a mandatory part of the path and NavType.StringType (not nullable).
         if (storyId != null) {
             UserStoriesDetailScreen(
                 navController = navController,
@@ -252,8 +248,6 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
                 storyId = storyId
             )
         } else {
-            // This case should ideally not be reached if storyId is a mandatory path parameter.
-            // If it can be reached due to deep linking or other issues, provide fallback.
             Text("Error: Story ID is missing. Cannot display details.")
         }
     }
