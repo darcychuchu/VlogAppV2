@@ -1,17 +1,13 @@
 package com.vlog.app.screens.filter
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.R
 import com.vlog.app.data.categories.CategoryRepository
 import com.vlog.app.data.videos.VideoRepository
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.data.categories.CategoryConfigManager
 import com.vlog.app.data.users.UserSessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

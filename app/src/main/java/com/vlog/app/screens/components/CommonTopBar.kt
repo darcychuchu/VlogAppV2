@@ -28,7 +28,6 @@ import com.vlog.app.navigation.NavigationRoutes
  * @param navController 导航控制器
  * @param showSearchIcon 是否显示搜索图标，默认为true
  * @param currentRoute 当前路由，用于判断是否显示搜索图标
- * @param actions 自定义操作按钮
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,8 +35,7 @@ fun CommonTopBar(
     title: String,
     navController: NavController,
     showSearchIcon: Boolean = true,
-    currentRoute: String? = null,
-    actions: @Composable () -> Unit = {}
+    currentRoute: String? = null
 ) {
     // 判断当前页面是否是用户页面，如果是则不显示搜索图标
     val isUserPage = currentRoute == NavigationRoutes.MainRoute.Profile.route
@@ -57,9 +55,6 @@ fun CommonTopBar(
             }
         },
         actions = {
-            // 自定义操作按钮
-            actions()
-            
             // 右侧搜索按钮，根据条件显示
             if (shouldShowSearchIcon) {
                 IconButton(onClick = { navController.navigate("search") }) {
