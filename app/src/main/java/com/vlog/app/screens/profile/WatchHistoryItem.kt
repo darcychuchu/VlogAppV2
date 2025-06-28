@@ -35,7 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.vlog.app.data.histories.watch.WatchHistoryWithVideo
+import com.vlog.app.data.followers.histories.watch.WatchHistoryWithVideo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

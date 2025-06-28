@@ -2,8 +2,8 @@ package com.vlog.app.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.data.histories.search.SearchHistoryEntity
-import com.vlog.app.data.histories.search.SearchRepository
+import com.vlog.app.data.followers.histories.search.SearchHistoryEntity
+import com.vlog.app.data.followers.histories.search.SearchRepository
 import com.vlog.app.data.videos.Videos
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

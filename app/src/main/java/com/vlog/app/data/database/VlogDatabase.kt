@@ -12,10 +12,10 @@ import com.vlog.app.data.comments.CommentDao
 import com.vlog.app.data.comments.CommentEntity
 import com.vlog.app.data.favorites.FavoritesDao
 import com.vlog.app.data.favorites.FavoritesEntity
-import com.vlog.app.data.histories.search.SearchHistoryDao
-import com.vlog.app.data.histories.search.SearchHistoryEntity
-import com.vlog.app.data.histories.watch.WatchHistoryDao
-import com.vlog.app.data.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.followers.histories.search.SearchHistoryDao
+import com.vlog.app.data.followers.histories.search.SearchHistoryEntity
+import com.vlog.app.data.followers.histories.watch.WatchHistoryDao
+import com.vlog.app.data.followers.histories.watch.WatchHistoryEntity
 import com.vlog.app.data.videos.VideoDao
 import com.vlog.app.data.videos.VideoEntity
 

@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.vlog.app.data.histories.search.SearchHistoryEntity
+import com.vlog.app.data.followers.histories.search.SearchHistoryEntity
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.screens.favorites.FavoriteViewModel
 import kotlin.collections.isNotEmpty

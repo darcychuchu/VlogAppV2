@@ -1,4 +1,4 @@
-package com.vlog.app.data.histories.watch
+package com.vlog.app.data.followers.histories.watch
 
 import com.vlog.app.data.videos.Videos
 import kotlinx.coroutines.flow.Flow

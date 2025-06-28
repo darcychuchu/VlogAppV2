@@ -1,4 +1,4 @@
-package com.vlog.app.data.histories.watch
+package com.vlog.app.data.followers.histories.watch
 
 import androidx.room.Embedded
 import androidx.room.Entity

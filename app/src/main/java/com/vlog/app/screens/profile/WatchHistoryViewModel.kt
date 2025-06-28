@@ -2,10 +2,8 @@ package com.vlog.app.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vlog.app.data.histories.watch.WatchHistoryEntity
-import com.vlog.app.data.histories.watch.WatchHistoryRepository
-import com.vlog.app.data.histories.watch.WatchHistoryWithVideo
-import com.vlog.app.data.videos.VideoRepository
+import com.vlog.app.data.followers.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.followers.histories.watch.WatchHistoryWithVideo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

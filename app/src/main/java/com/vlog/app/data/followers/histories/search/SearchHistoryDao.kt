@@ -1,4 +1,4 @@
-package com.vlog.app.data.histories.search
+package com.vlog.app.data.followers.histories.search
 
 import androidx.room.Dao
 import androidx.room.Delete

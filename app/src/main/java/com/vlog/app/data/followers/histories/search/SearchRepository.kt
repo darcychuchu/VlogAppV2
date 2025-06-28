@@ -1,10 +1,9 @@
-package com.vlog.app.data.histories.search
+package com.vlog.app.data.followers.histories.search
 
 import com.vlog.app.data.videos.Videos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import java.util.Date
 
 /**
  * 搜索仓库

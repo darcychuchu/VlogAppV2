@@ -8,8 +8,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.vlog.app.data.histories.watch.WatchHistoryEntity
-import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.followers.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.followers.histories.watch.WatchHistoryRepository
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
 import com.vlog.app.data.videos.Videos

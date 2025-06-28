@@ -7,21 +7,19 @@ import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.comments.CommentRepository
 import com.vlog.app.data.comments.Comments
 import com.vlog.app.data.database.Resource
-import com.vlog.app.data.histories.watch.WatchHistoryEntity
-import com.vlog.app.data.histories.watch.WatchHistoryRepository
+import com.vlog.app.data.followers.histories.watch.WatchHistoryEntity
+import com.vlog.app.data.followers.histories.watch.WatchHistoryRepository
 import com.vlog.app.data.users.UserSessionManager // Added UserSessionManager import
 import com.vlog.app.data.videos.VideoRepository
 import com.vlog.app.data.videos.GatherList
 import com.vlog.app.data.videos.PlayList
 import com.vlog.app.data.videos.Videos
-import com.vlog.app.data.videos.toVideos
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch

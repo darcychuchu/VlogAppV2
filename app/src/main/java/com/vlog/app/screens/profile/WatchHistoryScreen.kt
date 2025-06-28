@@ -36,9 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import com.vlog.app.data.histories.watch.WatchHistoryEntity
-import com.vlog.app.navigation.NavigationRoutes
 
 /**
  * 观看历史页面

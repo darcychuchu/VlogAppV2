@@ -12,10 +12,10 @@ import com.vlog.app.data.comments.CommentService
 import com.vlog.app.data.database.VlogDatabase
 import com.vlog.app.data.favorites.FavoriteService
 import com.vlog.app.data.favorites.FavoritesDao
-import com.vlog.app.data.histories.search.SearchHistoryDao
-import com.vlog.app.data.histories.search.SearchRepository
-import com.vlog.app.data.histories.search.SearchService
-import com.vlog.app.data.histories.watch.WatchHistoryDao
+import com.vlog.app.data.followers.histories.search.SearchHistoryDao
+import com.vlog.app.data.followers.histories.search.SearchRepository
+import com.vlog.app.data.followers.histories.search.SearchService
+import com.vlog.app.data.followers.histories.watch.WatchHistoryDao
 import com.vlog.app.data.stories.StoriesService
 import com.vlog.app.data.users.UserService
 import com.vlog.app.data.videos.VideoDao
