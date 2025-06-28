@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -59,6 +60,24 @@ interface CategoryDao {
      */
     @Query("DELETE FROM categories")
     suspend fun deleteAllCategories()
+
+    /**
+     * 更新分类
+     */
+    @Update
+    suspend fun updateCategory(category: CategoriesEntity)
+
+    /**
+     * 更新分类的启用状态
+     */
+    @Query("UPDATE categories SET isEnabled = :isEnabled WHERE id = :id")
+    suspend fun updateCategoryEnabled(id: String, isEnabled: Int)
+
+    /**
+     * 更新分类的排序
+     */
+    @Query("UPDATE categories SET orderSort = :orderSort WHERE id = :id")
+    suspend fun updateCategoryOrder(id: String, orderSort: Int)
 
     /**
      * 事务：清空表并插入新数据

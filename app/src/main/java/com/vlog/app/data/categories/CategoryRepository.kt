@@ -166,4 +166,27 @@ class CategoryRepository @Inject constructor(
 
         return result
     }
+
+    /**
+     * 更新分类的启用状态
+     */
+    suspend fun updateCategoryEnabled(id: String, isEnabled: Int) {
+        categoryDao.updateCategoryEnabled(id, isEnabled)
+    }
+
+    /**
+     * 更新分类的排序
+     */
+    suspend fun updateCategoryOrder(id: String, orderSort: Int) {
+        categoryDao.updateCategoryOrder(id, orderSort)
+    }
+
+    /**
+     * 批量更新分类排序
+     */
+    suspend fun updateCategoriesOrder(categories: List<CategoriesEntity>) {
+        categories.forEach { category ->
+            categoryDao.updateCategoryOrder(category.id, category.orderSort)
+        }
+    }
 }

@@ -26,7 +26,8 @@ class VideoRepository @Inject constructor(
         year: Int = 0,
         sort: Int = 0,
         page: Int = 1,
-        pageSize: Int = 24
+        pageSize: Int = 24,
+        token: String? = null
     ): Result<PaginatedResponse<Videos>> {
         return try {
             val response = videoService.getVideosFilter(
@@ -35,7 +36,8 @@ class VideoRepository @Inject constructor(
                 year = year,
                 orderBy = sort,
                 page = page,
-                size = pageSize
+                size = pageSize,
+                token = token
             )
 
             if (response.code == 200 && response.data != null) {

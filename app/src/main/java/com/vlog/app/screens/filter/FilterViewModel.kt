@@ -3,6 +3,7 @@ package com.vlog.app.screens.filter
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vlog.app.data.categories.CategoryRepository
+import com.vlog.app.data.users.UserSessionManager
 import com.vlog.app.data.videos.VideoRepository
 import com.vlog.app.data.videos.Videos
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class FilterViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val TAG = "FilterViewModel"
@@ -100,7 +102,7 @@ class FilterViewModel @Inject constructor(
     }
 
     fun updateFilter(section: FilterSection, item: FilterItem) {
-        if (item.isLocked){
+        if (item.isLocked && !userSessionManager.isLoggedIn()){
             _uiState.update { it.copy(loginRequiredMessage = "此分类需要登录后才能浏览") }
             return
         }
@@ -237,6 +239,7 @@ class FilterViewModel @Inject constructor(
         ) }
 
         viewModelScope.launch {
+            val token = userSessionManager.getAccessToken()
             // 获取选中分类的 ID
             val currentUiState = _uiState.value
             val categoryId = currentUiState.selectedCategory.id
@@ -254,8 +257,9 @@ class FilterViewModel @Inject constructor(
                 categoryId = cate,
                 year = year ?: 0, // Default to 0 if year is null
                 sort = orderBy ?: 2, // Default to 0 if sort is null
-                page = 1 // Always page 1 for initial load
+                page = 1, // Always page 1 for initial load
                 // forceRefresh argument removed
+                token = token
             )
 
             result.fold(
@@ -347,6 +351,109 @@ class FilterViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * 显示分类配置界面
+     */
+    fun showCategoryConfig() {
+        viewModelScope.launch {
+            try {
+                val categories = categoryRepository.getMainCategories().first()
+                val configItems = categories.map { category ->
+                    ConfigCategoryItem(
+                        id = category.id,
+                        name = category.title,
+                        isEnabled = category.isEnabled == 0,
+                        orderSort = category.orderSort,
+                        isLocked = category.isLocked == 1
+                    )
+                }.sortedByDescending { it.orderSort }
+
+                _uiState.update {
+                    it.copy(
+                        showCategoryConfig = true,
+                        configCategories = configItems
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = "加载分类配置失败: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * 隐藏分类配置界面
+     */
+    fun hideCategoryConfig() {
+        _uiState.update {
+            it.copy(showCategoryConfig = false)
+        }
+    }
+
+    /**
+     * 更新分类启用状态
+     */
+    fun updateCategoryEnabled(categoryId: String, isEnabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val enabledValue = if (isEnabled) 0 else 1
+                categoryRepository.updateCategoryEnabled(categoryId, enabledValue)
+                
+                // 更新UI状态
+                _uiState.update { state ->
+                    val updatedCategories = state.configCategories.map { category ->
+                        if (category.id == categoryId) {
+                            category.copy(isEnabled = isEnabled)
+                        } else {
+                            category
+                        }
+                    }
+                    state.copy(configCategories = updatedCategories)
+                }
+                
+                // 重新加载主分类
+                loadMainCategories()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = "更新分类状态失败: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新分类排序
+     */
+    fun updateCategoryOrder(categories: List<ConfigCategoryItem>) {
+        viewModelScope.launch {
+            try {
+                // 更新排序值
+                val updatedCategories = categories.mapIndexed { index, category ->
+                    val newOrderSort = categories.size - index
+                    category.copy(orderSort = newOrderSort)
+                }
+                
+                // 批量更新数据库
+                updatedCategories.forEach { category ->
+                    categoryRepository.updateCategoryOrder(category.id, category.orderSort)
+                }
+                
+                // 更新UI状态
+                _uiState.update {
+                    it.copy(configCategories = updatedCategories)
+                }
+                
+                // 重新加载主分类
+                loadMainCategories()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = "更新分类排序失败: ${e.message}")
+                }
+            }
+        }
+    }
 }
 
 data class FilterUiState(
@@ -364,7 +471,9 @@ data class FilterUiState(
     val error: String? = null,
     val loginRequiredMessage: String? = null,
     val currentPage: Int = 1,
-    val canLoadMore: Boolean = true
+    val canLoadMore: Boolean = true,
+    val showCategoryConfig: Boolean = false,
+    val configCategories: List<ConfigCategoryItem> = emptyList()
 )
 
 data class FilterSection(
@@ -376,6 +485,14 @@ data class FilterSection(
 data class FilterItem(
     val id: String,
     val name: String,
+    val isLocked: Boolean = false
+)
+
+data class ConfigCategoryItem(
+    val id: String,
+    val name: String,
+    val isEnabled: Boolean,
+    val orderSort: Int,
     val isLocked: Boolean = false
 )
 
