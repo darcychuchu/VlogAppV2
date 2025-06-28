@@ -10,8 +10,8 @@ import androidx.room.PrimaryKey
 data class CategoriesEntity(
     @PrimaryKey
     var id: String,
-    var isLocked: Int = 0,
-    var isEnabled: Int = 0,
+    var isLocked: Int = 0,  // 0 非登录        1，需登录
+    var isEnabled: Int = 0, // 0 显示         1，不显示
     var orderSort: Int = 0,
     val version: Int = 0,
     val parentId: String? = null,
