@@ -35,7 +35,8 @@ fun CommonTopBar(
     title: String,
     navController: NavController,
     showSearchIcon: Boolean = true,
-    currentRoute: String? = null
+    currentRoute: String? = null,
+    actions: @Composable () -> Unit = {}
 ) {
     // 判断当前页面是否是用户页面，如果是则不显示搜索图标
     val isUserPage = currentRoute == NavigationRoutes.MainRoute.Profile.route
@@ -55,6 +56,8 @@ fun CommonTopBar(
             }
         },
         actions = {
+            // 自定义操作按钮
+            actions()
             // 右侧搜索按钮，根据条件显示
             if (shouldShowSearchIcon) {
                 IconButton(onClick = { navController.navigate("search") }) {

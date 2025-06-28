@@ -26,14 +26,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.Button
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import android.util.Log
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -89,38 +81,12 @@ fun FilterScreen(
         }
     }
 
-    // 监听导航状态，当从设置页面返回时重新加载分类配置
-    LaunchedEffect(navController) {
-        val currentBackStackEntry = navController.currentBackStackEntry
-        val savedStateHandle = currentBackStackEntry?.savedStateHandle
-        savedStateHandle?.getLiveData<Boolean>("category_settings_changed")?.observeForever { changed ->
-            if (changed == true) {
-                viewModel.reloadCategoryConfig()
-                savedStateHandle.set("category_settings_changed", false)
-            }
-        }
-    }
-
-
-
     Scaffold(
         topBar = {
             CommonTopBar(
                 title = stringResource(R.string.videos),
                 navController = navController,
-                currentRoute = NavigationRoutes.MainRoute.Videos.route,
-                actions = {
-                    IconButton(
-                        onClick = {
-                            navController.navigate(NavigationRoutes.OtherRoute.CategorySettings.route)
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "分类设置"
-                        )
-                    }
-                }
+                currentRoute = NavigationRoutes.MainRoute.Videos.route
             )
         }
     ) { paddingValues ->
@@ -140,64 +106,6 @@ fun FilterScreen(
                     onFilterUpdate = viewModel::updateFilter,
                     modifier = Modifier.padding(8.dp)
                 )
-
-                // 登录提示（页面内显示）
-                uiState.loginRequiredMessage?.let { message ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "需要登录",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = message,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                            
-                            Row {
-                                Button(
-                                    onClick = {
-                                        viewModel.clearLoginRequiredMessage()
-                                        navController.navigate(NavigationRoutes.MainRoute.Profile.route)
-                                    },
-                                    modifier = Modifier.padding(end = 8.dp)
-                                ) {
-                                    Text("去登录")
-                                }
-                                
-                                IconButton(
-                                    onClick = { viewModel.clearLoginRequiredMessage() }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "关闭",
-                                        tint = MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
 
                 // Results
                 when {

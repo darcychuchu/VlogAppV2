@@ -17,7 +17,6 @@ import com.vlog.app.screens.users.LoginScreen
 import com.vlog.app.screens.users.RegisterScreen
 import com.vlog.app.screens.users.UserHomeScreen
 import com.vlog.app.screens.users.UserStoriesDetailScreen
-import com.vlog.app.screens.filter.CategorySettingsScreen
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.vlog.app.screens.profile.AppUpdateScreen
@@ -200,12 +199,7 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
 
     // 分类设置页面
     composable(NavigationRoutes.OtherRoute.CategorySettings.route) {
-        CategorySettingsScreen(
-            navController = navController,
-            onNavigateBack = {
-                navController.popBackStack()
-            }
-        )
+
     }
 
 
