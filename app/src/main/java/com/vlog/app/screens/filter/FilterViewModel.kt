@@ -1,7 +1,10 @@
 package com.vlog.app.screens.filter
 
+import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.Log
+import androidx.media3.common.util.UnstableApi
 import com.vlog.app.data.categories.CategoryRepository
 import com.vlog.app.data.users.UserSessionManager
 import com.vlog.app.data.videos.VideoRepository
@@ -102,10 +105,7 @@ class FilterViewModel @Inject constructor(
     }
 
     fun updateFilter(section: FilterSection, item: FilterItem) {
-        if (item.isLocked && !userSessionManager.isLoggedIn()){
-            _uiState.update { it.copy(loginRequiredMessage = "此分类需要登录后才能浏览") }
-            return
-        }
+
 
         _uiState.update { state ->
             when (section.param) {
@@ -244,46 +244,61 @@ class FilterViewModel @Inject constructor(
             val currentUiState = _uiState.value
             val categoryId = currentUiState.selectedCategory.id
 
-            // 从数据库获取分类实体，以获取 isTyped 字段
-            val categoryEntity = categoryRepository.getCategoryById(categoryId)
-            // 使用 isTyped 字段作为 typed 参数，如果为空则使用 ID
-            val typed = categoryEntity?.modelTyped ?: categoryId.toIntOrNull()
-            val year = currentUiState.selectedYear.id.toIntOrNull()
-            val orderBy = currentUiState.selectedOrderBy.id.toIntOrNull()
-            val cate = currentUiState.selectedSubCategory?.id
-
-            val result = videoRepository.getFilteredVideos(
-                typed = typed ?: 1, // Default to 1 if typed is null
-                categoryId = cate,
-                year = year ?: 0, // Default to 0 if year is null
-                sort = orderBy ?: 2, // Default to 0 if sort is null
-                page = 1, // Always page 1 for initial load
-                // forceRefresh argument removed
-                token = token
-            )
-
-            result.fold(
-                onSuccess = { responseData ->
-                    _uiState.update {
-                        it.copy(
-                            videos = responseData.items ?: emptyList(),
-                            isLoading = false,
-                            canLoadMore = (responseData.items?.size ?: 0) == responseData.pageSize && responseData.total > responseData.page,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { exception ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = exception.message ?: "Failed to load videos",
-                            canLoadMore = false,
-                            videos = emptyList() // Clear videos on error
-                        )
-                    }
+            if (currentUiState.selectedCategory.isLocked && !userSessionManager.isLoggedIn()){
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        loginRequiredMessage = "此分类需要登录后才能浏览",
+                        canLoadMore = false,
+                        videos = emptyList() // Clear videos on error
+                    )
                 }
-            )
+            }else{
+
+                // 从数据库获取分类实体，以获取 isTyped 字段
+                val categoryEntity = categoryRepository.getCategoryById(categoryId)
+                // 使用 isTyped 字段作为 typed 参数，如果为空则使用 ID
+                val typed = categoryEntity?.modelTyped ?: categoryId.toIntOrNull()
+                val year = currentUiState.selectedYear.id.toIntOrNull()
+                val orderBy = currentUiState.selectedOrderBy.id.toIntOrNull()
+                val cate = currentUiState.selectedSubCategory?.id
+
+                val result = videoRepository.getFilteredVideos(
+                    typed = typed ?: 1, // Default to 1 if typed is null
+                    categoryId = cate,
+                    year = year ?: 0, // Default to 0 if year is null
+                    sort = orderBy ?: 2, // Default to 0 if sort is null
+                    page = 1, // Always page 1 for initial load
+                    // forceRefresh argument removed
+                    token = token
+                )
+
+                result.fold(
+                    onSuccess = { responseData ->
+                        _uiState.update {
+                            it.copy(
+                                videos = responseData.items ?: emptyList(),
+                                isLoading = false,
+                                canLoadMore = responseData.items?.size == responseData.pageSize && responseData.total > responseData.page,
+                                error = null
+                            )
+                        }
+                    },
+                    onFailure = { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = exception.message ?: "Failed to load videos",
+                                canLoadMore = false,
+                                videos = emptyList() // Clear videos on error
+                            )
+                        }
+                    }
+                )
+
+            }
+
+
         }
     }
 
@@ -295,10 +310,10 @@ class FilterViewModel @Inject constructor(
         if (_uiState.value.isLoadingMore || !_uiState.value.canLoadMore) {
             return
         }
-
         _uiState.update { it.copy(isLoadingMore = true) }
 
         viewModelScope.launch {
+            val token = userSessionManager.getAccessToken()
             try {
                 val nextPage = _uiState.value.currentPage + 1
 
@@ -320,8 +335,9 @@ class FilterViewModel @Inject constructor(
                     categoryId = cate,
                     year = year ?: 0, // Default to 0 if year is null
                     sort = orderBy ?: 0, // Default to 0 if sort is null
-                    page = nextPage
+                    page = nextPage,
                     // forceRefresh argument removed
+                    token = token
                 )
 
                 result.fold(

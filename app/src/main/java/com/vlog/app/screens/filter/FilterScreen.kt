@@ -52,6 +52,7 @@ import com.vlog.app.screens.components.CommonTopBar
 import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
 import com.vlog.app.navigation.NavigationRoutes
+import com.vlog.app.screens.components.EmptyView
 import com.vlog.app.screens.components.VideoItem
 import com.vlog.app.screens.favorites.FavoriteViewModel
 import com.vlog.app.screens.users.UserViewModel // Added UserViewModel import
@@ -180,20 +181,11 @@ fun FilterScreen(
                             onRetry = { viewModel.applyFilters() }
                         )
                     }
-
                     uiState.videos.isEmpty() -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_videos_found),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        EmptyView(
+                            message = stringResource(R.string.no_videos_found),
+                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                        )
                     }
                     else -> {
 
@@ -206,7 +198,6 @@ fun FilterScreen(
                             modifier = Modifier.height((uiState.videos.size / 3 * 160).dp)
                         ) {
                             items(uiState.videos) { video ->
-
                                 VideoItem(
                                     video = video,
                                     onClick = { navController.navigate("video_detail/${video.id}") },
