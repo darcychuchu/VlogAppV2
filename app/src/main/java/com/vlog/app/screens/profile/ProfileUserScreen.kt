@@ -47,17 +47,20 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.vlog.app.navigation.NavigationRoutes
 import com.vlog.app.navigation.NavigationRoutes.OtherRoute
+import com.vlog.app.screens.users.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileUserScreen(
     navController: NavController,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel()
 ) {
     val isLoggedIn by profileViewModel.isLoggedIn.collectAsState()
     val currentUser by profileViewModel.currentUser.collectAsState()
@@ -89,7 +92,10 @@ fun ProfileUserScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             if (isLoggedIn) {
-                ProfileLoggedInContent(navController = navController, viewModel = profileViewModel)
+                ProfileLoggedInContent(
+                    navController = navController,
+                    onLogoutClick = userViewModel::logout,
+                    viewModel = profileViewModel)
             } else {
                 ProfileLoggedOutContent(navController = navController)
             }
@@ -139,7 +145,11 @@ fun ProfileLoggedOutContent(navController: NavController) {
 }
 
 @Composable
-fun ProfileLoggedInContent(navController: NavController, viewModel: ProfileViewModel) {
+fun ProfileLoggedInContent(
+    navController: NavController,
+    onLogoutClick: () -> Unit,
+    viewModel: ProfileViewModel,
+) {
     val currentUser by viewModel.currentUser.collectAsState()
     val followerCount by viewModel.followerCount.collectAsState()
     val followingCount by viewModel.followingCount.collectAsState()
@@ -194,6 +204,18 @@ fun ProfileLoggedInContent(navController: NavController, viewModel: ProfileViewM
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+            }
+
+            // 编辑资料和登出按钮
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("退出登录")
+                }
             }
         }
 

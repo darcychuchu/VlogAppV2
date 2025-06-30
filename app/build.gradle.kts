@@ -14,8 +14,8 @@ android {
         applicationId = "com.vlog.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 12
-        versionName = "2.1.0"
+        versionCode = 15
+        versionName = "2.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -4,8 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- 升级安装权限 开启后会被大多数手机判定为病毒，非必要不开启这个权限 -->
-    <!--uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" / -->
+    <!-- 升级安装权限  -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- 相机权限，用于拍照 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
