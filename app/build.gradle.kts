@@ -91,4 +91,7 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     // Material Icons Extended
     implementation(libs.androidx.compose.material.icons.extended)
+
+    implementation(libs.play.services.ads)
+    implementation(libs.androidx.foundation)
 }

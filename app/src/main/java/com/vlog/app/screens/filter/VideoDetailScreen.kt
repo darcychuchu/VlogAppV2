@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.itemsIndexed as lazyRowItemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -52,12 +52,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import android.util.Log
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.vlog.app.R
+import com.vlog.app.compose_util.BannerAdScreen
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.navigation.NavigationRoutes // Added for login navigation
 import com.vlog.app.screens.components.CommentSection
@@ -286,8 +293,11 @@ fun VideoDetailScreen(
                                             // 详情
                                             VideoDetailContent(videoDetail = videoDetail,favoriteViewModel)
 
+
                                             // 当前服务商的播放列表
                                             if (playlistState.currentPlayList.isNotEmpty()) {
+                                                var isGridView by remember { mutableStateOf(false) }
+
                                                 Card(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -295,59 +305,186 @@ fun VideoDetailScreen(
                                                     Column(
                                                         modifier = Modifier.padding(16.dp)
                                                     ) {
-                                                        Text(
-                                                            text = "选择集数 (${playlistState.currentPlayList.size} 集)",
-                                                            style = MaterialTheme.typography.titleMedium,
-                                                            fontWeight = FontWeight.Bold,
-                                                            modifier = Modifier.padding(bottom = 8.dp)
-                                                        )
+                                                        // 标题和排序按钮
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Text(
+                                                                text = "选择集数 (${playlistState.currentPlayList.size} 集)",
+                                                                style = MaterialTheme.typography.titleMedium,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
 
-                                                        val playListState = rememberLazyListState()
-                                                        val playCoroutineScope = rememberCoroutineScope()
-
-                                                        // 自动滚动到当前播放的集数
-                                                        LaunchedEffect(playlistState.currentPlayIndex) {
-                                                            if (playlistState.currentPlayIndex >= 0 && playlistState.currentPlayIndex < playlistState.currentPlayList.size) {
-                                                                playCoroutineScope.launch {
-                                                                    playListState.animateScrollToItem(playlistState.currentPlayIndex)
+                                                            // 当播放列表大于10个时显示排序按钮
+                                                            if (playlistState.currentPlayList.size > 10) {
+                                                                IconButton(
+                                                                    onClick = { isGridView = !isGridView }
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = if (isGridView) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
+                                                                        contentDescription = if (isGridView) "列表视图" else "网格视图"
+                                                                    )
                                                                 }
                                                             }
                                                         }
 
-                                                        LazyRow(
-                                                            state = playListState,
-                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                        ) {
-                                                            itemsIndexed(playlistState.currentPlayList) { index, playItem ->
-                                                                Card(
-                                                                    modifier = Modifier
-                                                                        .clickable {
-                                                                            playerViewModel.selectPlaySource(index)
-                                                                        },
-                                                                    colors = CardDefaults.cardColors(
-                                                                        containerColor = if (index == playlistState.currentPlayIndex) {
-                                                                            MaterialTheme.colorScheme.primary
-                                                                        } else {
-                                                                            MaterialTheme.colorScheme.surface
-                                                                        }
-                                                                    )
-                                                                ) {
-                                                                    Text(
-                                                                        text = playItem.title ?: "第${index + 1}集",
-                                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                                        color = if (index == playlistState.currentPlayIndex) {
-                                                                            MaterialTheme.colorScheme.onPrimary
-                                                                        } else {
-                                                                            MaterialTheme.colorScheme.onSurface
-                                                                        },
-                                                                        style = MaterialTheme.typography.bodyMedium
-                                                                    )
+                                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                                        val playListState = rememberLazyListState()
+                                                        val playGridState = rememberLazyGridState()
+                                                        val playCoroutineScope = rememberCoroutineScope()
+
+                                                        // 自动滚动到当前播放的集数
+                                                        LaunchedEffect(playlistState.currentPlayIndex, isGridView) {
+                                                            if (playlistState.currentPlayIndex >= 0 && playlistState.currentPlayIndex < playlistState.currentPlayList.size) {
+                                                                playCoroutineScope.launch {
+                                                                    if (isGridView) {
+                                                                        playGridState.animateScrollToItem(playlistState.currentPlayIndex)
+                                                                    } else {
+                                                                        playListState.animateScrollToItem(playlistState.currentPlayIndex)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // 根据视图模式显示不同布局
+                                                        if (isGridView) {
+                                                            // 网格视图：每行4个
+                                                            LazyVerticalGrid(
+                                                                columns = GridCells.Fixed(4),
+                                                                state = playGridState,
+                                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                                                modifier = Modifier.height(200.dp) // 限制高度避免无限扩展
+                                                            ) {
+                                                                itemsIndexed(playlistState.currentPlayList) { index, playItem ->
+                                                                    Card(
+                                                                        modifier = Modifier
+                                                                            .clickable {
+                                                                                playerViewModel.selectPlaySource(index)
+                                                                            },
+                                                                        colors = CardDefaults.cardColors(
+                                                                            containerColor = if (index == playlistState.currentPlayIndex) {
+                                                                                MaterialTheme.colorScheme.primary
+                                                                            } else {
+                                                                                MaterialTheme.colorScheme.surface
+                                                                            }
+                                                                        )
+                                                                    ) {
+                                                                        Text(
+                                                                            text = playItem.title ?: "第${index + 1}集",
+                                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                                                            color = if (index == playlistState.currentPlayIndex) {
+                                                                                MaterialTheme.colorScheme.onPrimary
+                                                                            } else {
+                                                                                MaterialTheme.colorScheme.onSurface
+                                                                            },
+                                                                            style = MaterialTheme.typography.bodySmall
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        } else {
+                                                            // 默认列表视图
+                                                            LazyRow(
+                                                                state = playListState,
+                                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                            ) {
+                                                                lazyRowItemsIndexed(playlistState.currentPlayList) { index, playItem ->
+                                                                    Card(
+                                                                        modifier = Modifier
+                                                                            .clickable {
+                                                                                playerViewModel.selectPlaySource(index)
+                                                                            },
+                                                                        colors = CardDefaults.cardColors(
+                                                                            containerColor = if (index == playlistState.currentPlayIndex) {
+                                                                                MaterialTheme.colorScheme.primary
+                                                                            } else {
+                                                                                MaterialTheme.colorScheme.surface
+                                                                            }
+                                                                        )
+                                                                    ) {
+                                                                        Text(
+                                                                            text = playItem.title ?: "第${index + 1}集",
+                                                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                                            color = if (index == playlistState.currentPlayIndex) {
+                                                                                MaterialTheme.colorScheme.onPrimary
+                                                                            } else {
+                                                                                MaterialTheme.colorScheme.onSurface
+                                                                            },
+                                                                            style = MaterialTheme.typography.bodyMedium
+                                                                        )
+                                                                    }
                                                                 }
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
+
+//                                            if (playlistState.currentPlayList.isNotEmpty()) {
+//                                                Card(
+//                                                    modifier = Modifier.fillMaxWidth(),
+//                                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+//                                                ) {
+//                                                    Column(
+//                                                        modifier = Modifier.padding(16.dp)
+//                                                    ) {
+//                                                        Text(
+//                                                            text = "选择集数 (${playlistState.currentPlayList.size} 集)",
+//                                                            style = MaterialTheme.typography.titleMedium,
+//                                                            fontWeight = FontWeight.Bold,
+//                                                            modifier = Modifier.padding(bottom = 8.dp)
+//                                                        )
+//
+//                                                        val playListState = rememberLazyListState()
+//                                                        val playCoroutineScope = rememberCoroutineScope()
+//
+//                                                        // 自动滚动到当前播放的集数
+//                                                        LaunchedEffect(playlistState.currentPlayIndex) {
+//                                                            if (playlistState.currentPlayIndex >= 0 && playlistState.currentPlayIndex < playlistState.currentPlayList.size) {
+//                                                                playCoroutineScope.launch {
+//                                                                    playListState.animateScrollToItem(playlistState.currentPlayIndex)
+//                                                                }
+//                                                            }
+//                                                        }
+//
+//                                                        LazyRow(
+//                                                            state = playListState,
+//                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+//                                                        ) {
+//                                                            itemsIndexed(playlistState.currentPlayList) { index, playItem ->
+//                                                                Card(
+//                                                                    modifier = Modifier
+//                                                                        .clickable {
+//                                                                            playerViewModel.selectPlaySource(index)
+//                                                                        },
+//                                                                    colors = CardDefaults.cardColors(
+//                                                                        containerColor = if (index == playlistState.currentPlayIndex) {
+//                                                                            MaterialTheme.colorScheme.primary
+//                                                                        } else {
+//                                                                            MaterialTheme.colorScheme.surface
+//                                                                        }
+//                                                                    )
+//                                                                ) {
+//                                                                    Text(
+//                                                                        text = playItem.title ?: "第${index + 1}集",
+//                                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+//                                                                        color = if (index == playlistState.currentPlayIndex) {
+//                                                                            MaterialTheme.colorScheme.onPrimary
+//                                                                        } else {
+//                                                                            MaterialTheme.colorScheme.onSurface
+//                                                                        },
+//                                                                        style = MaterialTheme.typography.bodyMedium
+//                                                                    )
+//                                                                }
+//                                                            }
+//                                                        }
+//                                                    }
+//                                                }
+//                                            }
                                         }
                                         1 -> {
                                             // 评论
@@ -370,6 +507,11 @@ fun VideoDetailScreen(
                                             }
                                         }
                                     }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    BannerAdScreen()
+                                    Spacer(modifier = Modifier.height(16.dp))
+
 
                                     // 推荐视频
                                     RecommendedVideos(

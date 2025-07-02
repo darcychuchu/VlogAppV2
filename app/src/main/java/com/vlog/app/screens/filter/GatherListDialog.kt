@@ -4,6 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
@@ -222,8 +226,6 @@ fun GatherItem(
             if (isExpanded && !gather.playList.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                
-                Spacer(modifier = Modifier.height(8.dp))
 
 //                val playListState = rememberLazyGridState()
 //                val playCoroutineScope = rememberCoroutineScope()
@@ -256,32 +258,69 @@ fun GatherItem(
 //                }
 
 
-                val playListState = rememberLazyListState()
+                val playGridState = rememberLazyGridState()
+                //val playListState = rememberLazyListState()
                 val playCoroutineScope = rememberCoroutineScope()
 
                 // 自动滚动到当前播放的播放源
                 LaunchedEffect(currentPlayIndex, isSelected) {
                     if (isSelected && currentPlayIndex >= 0 && currentPlayIndex < gather.playList.size) {
                         playCoroutineScope.launch {
-                            playListState.animateScrollToItem(currentPlayIndex)
+                            playGridState.animateScrollToItem(currentPlayIndex)
+                            //playListState.animateScrollToItem(currentPlayIndex)
                         }
                     }
                 }
 
-                LazyRow(
-                    state = playListState,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    state = playGridState,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.height(200.dp) // 限制高度避免无限扩展
                 ) {
-                    itemsIndexed(gather.playList) { playIndex, playSource ->
-                        PlaySourceChip(
-                            playSource = playSource,
-                            isSelected = isSelected && playIndex == currentPlayIndex,
-                            onClick = {
-                                onPlaySourceSelected(playIndex)
-                            }
-                        )
+                    itemsIndexed(gather.playList) { index, playItem ->
+                        Card(
+                            modifier = Modifier
+                                .clickable {
+                                    onPlaySourceSelected(index)
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (index == currentPlayIndex) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
+                            )
+                        ) {
+                            Text(
+                                text = playItem.title ?: "第${index + 1}集",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                color = if (index == currentPlayIndex) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
+
+//                LazyRow(
+//                    state = playListState,
+//                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+//                ) {
+//                    itemsIndexed(gather.playList) { playIndex, playSource ->
+//                        PlaySourceChip(
+//                            playSource = playSource,
+//                            isSelected = isSelected && playIndex == currentPlayIndex,
+//                            onClick = {
+//                                onPlaySourceSelected(playIndex)
+//                            }
+//                        )
+//                    }
+//                }
             }
         }
     }
