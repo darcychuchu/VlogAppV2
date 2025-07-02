@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.vlog.app.compose_util
+package com.vlog.app.screens.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.wrapContentSize

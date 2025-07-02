@@ -64,7 +64,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.vlog.app.R
-import com.vlog.app.compose_util.BannerAdScreen
+import com.vlog.app.screens.components.BannerAdScreen
 import com.vlog.app.data.videos.Videos
 import com.vlog.app.navigation.NavigationRoutes // Added for login navigation
 import com.vlog.app.screens.components.CommentSection
@@ -508,10 +508,6 @@ fun VideoDetailScreen(
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    BannerAdScreen()
-                                    Spacer(modifier = Modifier.height(16.dp))
-
 
                                     // 推荐视频
                                     RecommendedVideos(
@@ -712,6 +708,10 @@ fun VideoDetailContent(
             text = videoDetail.description ?: "",
             style = MaterialTheme.typography.bodyMedium
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        BannerAdScreen()
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 

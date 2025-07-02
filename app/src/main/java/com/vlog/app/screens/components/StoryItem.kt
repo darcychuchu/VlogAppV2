@@ -188,6 +188,8 @@ fun StoryItem(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            BannerAdScreen()
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 底部操作栏
             Row(

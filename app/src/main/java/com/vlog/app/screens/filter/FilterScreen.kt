@@ -52,6 +52,7 @@ import com.vlog.app.screens.components.CommonTopBar
 import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
 import com.vlog.app.navigation.NavigationRoutes
+import com.vlog.app.screens.components.BannerAdScreen
 import com.vlog.app.screens.components.EmptyView
 import com.vlog.app.screens.components.VideoItem
 import com.vlog.app.screens.favorites.FavoriteViewModel
@@ -188,6 +189,8 @@ fun FilterScreen(
                         )
                     }
                     else -> {
+                        BannerAdScreen()
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // 视频列表
                         LazyVerticalGrid(
