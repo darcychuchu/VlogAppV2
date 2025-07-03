@@ -44,8 +44,8 @@ class VideoDetailViewModel @Inject constructor(
 
     init {
         if (videoId.isNotBlank()) {
-            checkAndFetchRemoteVideoDetail()
             loadWatchHistory()
+            checkAndFetchRemoteVideoDetail()
             loadComments()
             loadRecommendedVideos() // Removed from here
 
@@ -79,6 +79,7 @@ class VideoDetailViewModel @Inject constructor(
                         ) // Can keep it true
                         is Resource.Success -> {
                             val gatherList = resource.data?.gatherList
+
                             val selectedGatherId = gatherList?.first()?.gatherId
 
                             if (!selectedGatherId.isNullOrEmpty()){
@@ -116,9 +117,16 @@ class VideoDetailViewModel @Inject constructor(
                                 isLoadingGathers = true, isLoading = true, error = null)
                             is Resource.Success -> {
                                 val gatherList = resource.data?.gatherList
-                                val selectedGatherId = gatherList?.first()?.gatherId
 
-                                if (!selectedGatherId.isNullOrEmpty()){
+                                val historyGatherId = uiState.value.watchHistory?.gatherId
+                                val selectedGatherId = if (historyGatherId != null && gatherList?.any { it.gatherId == historyGatherId } == true) {
+                                    historyGatherId
+                                } else {
+                                    // 如果没有历史记录或服务商不存在，选择第一个服务商
+                                    gatherList?.firstOrNull()?.gatherId
+                                }
+
+                                if (!selectedGatherId.isNullOrEmpty() && gatherList != null){
                                     loadPlayers(selectedGatherId, gatherList)
                                 }
                                 currentState.copy(
@@ -173,10 +181,26 @@ class VideoDetailViewModel @Inject constructor(
         _uiState.update { it.copy(isLoadingPlayers = true, selectedGatherId = gatherId) }
 
         viewModelScope.launch {
+
+            val historyGatherId = uiState.value.watchHistory?.gatherId
+            val historyPlayerUrl = uiState.value.watchHistory?.playerUrl
+
             val playList = gatherList.find { it.gatherId == gatherId }?.playList ?: emptyList()
-            val selectedPlayerUrl = playList.firstOrNull()?.playUrl
+            //val selectedPlayerUrl = playList.firstOrNull()?.playUrl
+            val selectedPlayerUrl = if (historyPlayerUrl != null && historyGatherId == gatherId && playList.any { it.playUrl == historyPlayerUrl }) {
+                historyPlayerUrl
+            } else {
+                // 如果没有历史记录或播放地址不存在，选择第一个地址
+                playList.firstOrNull()?.playUrl
+            }
             val selectedPlayer = playList.find { it.playUrl == selectedPlayerUrl }
             val gatherTitle = uiState.value.gathers.find { it.gatherId == gatherId }?.gatherTitle
+
+//            val playUrlToIndexMap = playList.mapIndexed { index, mapping ->
+//                mapping.playUrl to index
+//            }.toMap()
+//            val currentIndex = playUrlToIndexMap[selectedPlayerUrl] ?: -1
+
             _uiState.update {
                 it.copy(
                     players = playList,
@@ -192,8 +216,7 @@ class VideoDetailViewModel @Inject constructor(
                         gatherId = gatherId,
                         gatherName = gatherTitle,
                         playerUrl = selectedPlayerUrl,
-                        episodeTitle = selectedPlayer?.title,
-                        episodeIndex = 0
+                        episodeTitle = selectedPlayer?.title
                     )
                 }
             }

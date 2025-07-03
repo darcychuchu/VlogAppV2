@@ -30,19 +30,23 @@ import androidx.compose.material3.Text
 import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -96,6 +100,17 @@ fun FilterScreen(
         }
     }
 
+    // 滚动状态管理
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // 判断是否显示返回顶部按钮（滚动超过一定距离时显示）
+    val showScrollToTopButton by remember {
+        derivedStateOf {
+            scrollState.value > 500 // 滚动超过500像素时显示按钮
+        }
+    }
+
     Scaffold(
         topBar = {
             CommonTopBar(
@@ -103,6 +118,23 @@ fun FilterScreen(
                 navController = navController,
                 currentRoute = NavigationRoutes.MainRoute.Videos.route
             )
+        },
+        floatingActionButton = {
+            if (showScrollToTopButton) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            scrollState.animateScrollTo(0)
+                        }
+                    },
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "返回顶部"
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Box(
@@ -113,7 +145,7 @@ fun FilterScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
             ) {
                 // Filter options
                 FilterOptions(

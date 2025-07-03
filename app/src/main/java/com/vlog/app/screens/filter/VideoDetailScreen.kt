@@ -60,7 +60,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.vlog.app.R
@@ -139,7 +141,19 @@ fun VideoDetailScreen(
     LaunchedEffect(videoDetail) {
         videoDetail?.let { detail ->
             if (detail.gatherList?.isNotEmpty() == true) {
-                playerViewModel.initializePlaylist(detail, detail.gatherList!!)
+                var gatherIndex = 0
+                uiState.gathers.forEachIndexed {index, gather ->
+                    if (!uiState.selectedGatherId.isNullOrEmpty() && gather.gatherId == uiState.selectedGatherId) {
+                        gatherIndex = index
+                    }
+                }
+                var playIndex = 0
+                uiState.players.forEachIndexed {index, player ->
+                    if (!uiState.selectedPlayerUrl.isNullOrEmpty() && player.playUrl == uiState.selectedPlayerUrl) {
+                        playIndex = index
+                    }
+                }
+                playerViewModel.initializePlaylist(detail, detail.gatherList!!,gatherIndex,playIndex)
             }
         }
     }
