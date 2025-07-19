@@ -221,8 +221,6 @@ fun FilterScreen(
                         )
                     }
                     else -> {
-                        BannerAdScreen()
-                        Spacer(modifier = Modifier.height(16.dp))
 
                         // 视频列表
                         LazyVerticalGrid(
@@ -235,7 +233,7 @@ fun FilterScreen(
                             items(uiState.videos) { video ->
                                 VideoItem(
                                     video = video,
-                                    onClick = { navController.navigate("video_detail/${video.id}") },
+                                    onClick = { navController.navigate("video_detail/${video.id}/${video.isTyped}") },
                                     navController = navController, // Pass NavController
                                     favoriteViewModel = favoriteViewModel
                                 )
@@ -391,6 +389,13 @@ fun FilterOptions(
             }
         }
 
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BannerAdScreen()
+        }
 
     }
 }

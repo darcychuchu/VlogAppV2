@@ -45,6 +45,7 @@ data class VideoPlayerUiState(
     var remarks: String? = null,
     var coverUrl: String? = null,
     val watchHistory: WatchHistoryEntity? = null, // 观看历史
+    val isOrientationFullscreen: Boolean = false
 )
 
 data class PlaylistState(
@@ -378,6 +379,12 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
 
+
+    fun toggleOrientationFullscreen() {
+        _uiState.update { it.copy(isOrientationFullscreen = !it.isOrientationFullscreen) }
+    }
+
+
 //    fun setPlaybackSpeed(speed: Float) {
 //        _exoPlayer?.setPlaybackSpeed(speed)
 //        _uiState.update { it.copy(playbackSpeed = speed) }
@@ -434,24 +441,24 @@ class VideoPlayerViewModel @Inject constructor(
 //        }
 //    }
 
-    fun setCurrentGatherAndEpisode(gatherId: String?, episodeIndex: Int?) {
-        viewModelScope.launch {
-            if (gatherId == null || episodeIndex == null) return@launch
-
-            val current = _playlistState.value
-            val targetGatherIndex = current.gatherList.indexOfFirst { it.gatherId == gatherId }
-
-            if (targetGatherIndex != -1) {
-                // Found the gather, now set episode
-                val targetGather = current.gatherList[targetGatherIndex]
-                val targetPlayList = targetGather.playList ?: emptyList()
-                val validEpisodeIndex = episodeIndex.coerceIn(0, (targetPlayList.size -1).coerceAtLeast(0))
-
-                updatePlayerForPlaylistNavigation(targetGatherIndex, validEpisodeIndex, true)
-
-            }
-        }
-    }
+//    fun setCurrentGatherAndEpisode(gatherId: String?, episodeIndex: Int?) {
+//        viewModelScope.launch {
+//            if (gatherId == null || episodeIndex == null) return@launch
+//
+//            val current = _playlistState.value
+//            val targetGatherIndex = current.gatherList.indexOfFirst { it.gatherId == gatherId }
+//
+//            if (targetGatherIndex != -1) {
+//                // Found the gather, now set episode
+//                val targetGather = current.gatherList[targetGatherIndex]
+//                val targetPlayList = targetGather.playList ?: emptyList()
+//                val validEpisodeIndex = episodeIndex.coerceIn(0, (targetPlayList.size -1).coerceAtLeast(0))
+//
+//                updatePlayerForPlaylistNavigation(targetGatherIndex, validEpisodeIndex, true)
+//
+//            }
+//        }
+//    }
 
 //    /**
 //     * 设置当前播放的 gatherId (from deep link or history)

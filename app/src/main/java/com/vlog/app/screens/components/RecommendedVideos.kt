@@ -28,7 +28,7 @@ import com.vlog.app.data.videos.Videos
 fun RecommendedVideos(
     videos: List<Videos>,
     isLoading: Boolean,
-    onVideoClick: (String) -> Unit
+    onVideoClick: (String, Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -73,7 +73,7 @@ fun RecommendedVideos(
                 items(videos) { video ->
                     RecommendedVideoItem(
                         video = video,
-                        onClick = { onVideoClick(video.id.toString()) }
+                        onClick = { onVideoClick(video.id.toString(),video.isTyped ?: 1) }
                     )
                 }
             }

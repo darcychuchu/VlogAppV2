@@ -44,7 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun WatchHistoryScreen(
     onNavigateBack: () -> Unit,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (String, Int) -> Unit,
     watchHistoryViewModel: WatchHistoryViewModel = hiltViewModel()
 ) {
     val uiState by watchHistoryViewModel.uiState.collectAsState()
@@ -115,7 +115,7 @@ fun WatchHistoryScreen(
 @Composable
 fun WatchHistoryContent(
     uiState: WatchHistoryUiState,
-    onItemClick: (String) -> Unit,
+    onItemClick: (String, Int) -> Unit,
     onDeleteItem: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -162,7 +162,7 @@ fun WatchHistoryContent(
                     items(uiState.watchHistoryWithVideo) { history ->
                         WatchHistoryItem(
                             watchHistoryWithVideo = history,
-                            onClick = { onItemClick(history.watchHistory.videoId) },
+                            onClick = { onItemClick(history.watchHistory.videoId,history.watchHistory.videoType) },
                             onDelete = { onDeleteItem(history.watchHistory.videoId) }
                         )
                     }

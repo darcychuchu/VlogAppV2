@@ -77,8 +77,8 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
             onNavigateBack = {
                 navController.popBackStack()
             },
-            onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+            onVideoClick = { videoId, typed ->
+                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId,typed))
             }
         )
     }
@@ -99,14 +99,17 @@ private fun NavGraphBuilder.addMainRoutes(navController: NavHostController) {
 private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController) {
 
     composable(
-        route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}",
+        route = "${NavigationRoutes.FullScreenRoute.VideoDetail.route}?videoId={videoId}&typed={typed}",
         arguments = listOf(
-            navArgument("videoId") { type = NavType.StringType }
+            navArgument("videoId") { type = NavType.StringType },
+            navArgument("typed") { type = NavType.IntType }
         )
     ) { backStackEntry ->
         val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+        val typed = backStackEntry.arguments?.getInt("typed") ?: 1
         VideoDetailScreen(
             videoId = videoId,
+            typed = typed,
             navController = navController
         )
     }
@@ -123,8 +126,8 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
             onNavigateBack = {
                 navController.popBackStack()
             },
-            onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+            onVideoClick = { videoId, typed->
+                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId,typed))
             }
         )
     }
@@ -146,8 +149,8 @@ private fun NavGraphBuilder.addOtherRoutes(navController: NavHostController) {
             onNavigateBack = {
                 navController.popBackStack()
             },
-            onVideoClick = { videoId ->
-                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId))
+            onVideoClick = { videoId, typed->
+                navController.navigate(NavigationRoutes.FullScreenRoute.VideoDetail.createRoute(videoId,typed))
             }
         )
     }

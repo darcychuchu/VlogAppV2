@@ -36,7 +36,7 @@ fun VideoPlayerView(
     // Parameters below are mostly driven by ViewModel state or are direct pass-through for controls
     // playUrl: String?, // ViewModel now manages the URL/MediaItem
     isFullscreen: Boolean, // From ViewModel UI State
-    // isOrientationFullscreen: Boolean, // From ViewModel UI State - REMOVED
+    isOrientationFullscreen: Boolean, // From ViewModel UI State - REMOVED
     onFullscreenToggle: () -> Unit, // Calls ViewModel method
     onPrevious: () -> Unit, // Calls ViewModel method
     onNext: () -> Unit, // Calls ViewModel method
@@ -45,7 +45,7 @@ fun VideoPlayerView(
     currentTitle: String?, // From ViewModel PlaylistState
     currentGatherTitle: String?, // From ViewModel PlaylistState
     currentPlayTitle: String?, // From ViewModel PlaylistState
-    // onOrientationToggle: () -> Unit = {} // REMOVED
+    onOrientationToggle: () -> Unit = {} // REMOVED
 ) {
     var showControls by remember { mutableStateOf(true) }
     val uiState by playerViewModel.uiState.collectAsState()
@@ -119,10 +119,10 @@ fun VideoPlayerView(
                 currentTitle = currentTitle,
                 currentGatherTitle = currentGatherTitle, // From ViewModel via parameter
                 currentPlayTitle = currentPlayTitle,   // From ViewModel via parameter
-                // onOrientationToggle = onOrientationToggle, // REMOVED
+                onOrientationToggle = onOrientationToggle, // REMOVED
                 modifier = Modifier.fillMaxSize(),
 
-                // isOrientationFullscreen = isOrientationFullscreen // REMOVED
+                isOrientationFullscreen = isOrientationFullscreen // REMOVED
             )
         }
 
@@ -161,7 +161,7 @@ fun VideoPlayerControls(
     duration: Long, // From ViewModel
     bufferedPosition: Long, // From ViewModel
     isFullscreen: Boolean, // From ViewModel
-    // isOrientationFullscreen: Boolean, // REMOVED
+    isOrientationFullscreen: Boolean, // REMOVED
     onPlayPause: () -> Unit, // Calls ViewModel method
     onSeekTo: (Long) -> Unit, // Calls ViewModel method
     onPrevious: () -> Unit, // Calls ViewModel method
@@ -174,7 +174,7 @@ fun VideoPlayerControls(
     currentTitle: String?, // From ViewModel
     currentGatherTitle: String?, // From ViewModel
     currentPlayTitle: String?, // From ViewModel
-    // onOrientationToggle: () -> Unit, // REMOVED
+    onOrientationToggle: () -> Unit, // REMOVED
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.background(Color.Transparent)) { // Ensure controls background is transparent
@@ -360,16 +360,31 @@ fun VideoPlayerControls(
                     // The Fullscreen button's visibility should solely depend on whether the player
                     // is currently in its "fullscreen UI mode".
                     // if (!isOrientationFullscreen) { // This condition is removed
-                    IconButton(
-                        onClick = { onFullscreenToggle() }
-                    ) {
-                        Icon(
-                            imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                            contentDescription = if (isFullscreen) "退出全屏" else "全屏",
-                            tint = Color.White
-                        )
+                    if (!isOrientationFullscreen) {
+                        IconButton(
+                            onClick = { onFullscreenToggle() }
+                        ) {
+                            Icon(
+                                imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                                contentDescription = if (isFullscreen) "退出全屏" else "全屏",
+                                tint = Color.White
+                            )
+                        }
                     }
-                    // }
+
+
+                    if (isFullscreen) { // This condition is removed
+                        IconButton(
+                            onClick = { onOrientationToggle() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ScreenRotation,
+                                contentDescription = "横竖屏切换",
+                                tint = Color.White
+                            )
+                        }
+                    }
+
                 }
             }
         }

@@ -55,11 +55,13 @@ class VideoRepository @Inject constructor(
 
     suspend fun getVideoDetail(
         id: String,
+        typed: Int,
         token: String? = null
     ): Result<Videos> {
         return try {
             val response = videoService.getVideoDetail(
                 videoId = id,
+                typed = typed,
                 token = token
             )
             if (response.code == 200 && response.data != null) {
@@ -72,9 +74,9 @@ class VideoRepository @Inject constructor(
         }
     }
 
-    fun fetchAndCacheVideoDetail(videoId: String): Flow<Resource<Videos>> = flow {
+    fun fetchAndCacheVideoDetail(videoId: String, typed: Int, token: String? = null): Flow<Resource<Videos>> = flow {
         emit(Resource.Loading())
-        val result: Result<Videos> = getVideoDetail(id = videoId, token = null) // Call existing repo method
+        val result: Result<Videos> = getVideoDetail(id = videoId,typed = typed, token = token) // Call existing repo method
 
         result.fold(
             onSuccess = { videoDto ->

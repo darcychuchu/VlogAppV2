@@ -30,8 +30,8 @@ object NavigationRoutes {
     // 全屏导航路由
     sealed class FullScreenRoute(val route: String) {
 
-        object VideoDetail : FullScreenRoute("video_detail/{videoId}") {
-            fun createRoute(videoId: String) = "video_detail/$videoId"
+        object VideoDetail : FullScreenRoute("video_detail/{videoId}/{typed}") {
+            fun createRoute(videoId: String,typed: Int) = "video_detail/$videoId/$typed"
         }
 
     }

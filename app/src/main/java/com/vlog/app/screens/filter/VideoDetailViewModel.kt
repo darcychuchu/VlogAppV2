@@ -38,6 +38,8 @@ class VideoDetailViewModel @Inject constructor(
 
 
     private val videoId: String = savedStateHandle.get<String>("videoId") ?: ""
+    private val typed: Int = savedStateHandle.get<Int>("typed") ?: 1
+    private val token: String? = userSessionManager.getAccessToken()
 
     private val _uiState = MutableStateFlow(VideoDetailUiState())
     val uiState: StateFlow<VideoDetailUiState> = _uiState.asStateFlow()
@@ -70,7 +72,7 @@ class VideoDetailViewModel @Inject constructor(
     private fun checkAndFetchRemoteVideoDetail() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) } // Show loading before fetch
-            videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
+            videoRepository.fetchAndCacheVideoDetail(videoId,typed,token).collectLatest { resource ->
                 _uiState.update { currentState ->
                     when (resource) {
                         is Resource.Loading -> currentState.copy(
@@ -110,7 +112,7 @@ class VideoDetailViewModel @Inject constructor(
         if (videoId.isNotBlank()) {
             // Force fetch by ignoring timestamp check, directly call repository's remote fetch
             viewModelScope.launch {
-                videoRepository.fetchAndCacheVideoDetail(videoId).collectLatest { resource ->
+                videoRepository.fetchAndCacheVideoDetail(videoId,typed,token).collectLatest { resource ->
                     _uiState.update { currentState ->
                         when (resource) {
                             is Resource.Loading -> currentState.copy(

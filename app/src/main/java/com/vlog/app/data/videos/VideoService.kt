@@ -24,6 +24,7 @@ interface VideoService {
     @GET(Constants.ENDPOINT_VIDEO_DETAIL)
     suspend fun getVideoDetail(
         @Path("videoId") videoId: String,
+        @Query("typed") typed: Int = 1,
         @Query("token") token: String? = null
     ): ApiResponse<Videos>
 

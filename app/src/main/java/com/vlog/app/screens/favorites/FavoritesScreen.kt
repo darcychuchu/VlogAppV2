@@ -36,7 +36,7 @@ import com.vlog.app.navigation.NavigationRoutes
 fun FavoritesScreen(
     navController: NavController, // Added NavController
     onNavigateBack: () -> Unit,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (String, Int) -> Unit,
     viewModel: FavoriteViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -222,9 +222,9 @@ fun FavoritesScreen(
                                 favoriteWithVideo.video?.let { video ->
                                     FavoriteVideoCard(
                                         video = video.toVideos(),
-                                        onClick = { onVideoClick(video.id) },
+                                        onClick = { onVideoClick(video.id, video.isTyped) },
                                         onRemoveFavorite = {
-                                            viewModel.removeFromFavorites(video.id!!) { _, _ ->
+                                            viewModel.removeFromFavorites(video.id) { _, _ ->
                                                 // Room will auto-update the Flow
                                             }
                                         }

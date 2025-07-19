@@ -82,6 +82,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun VideoDetailScreen(
     videoId: String,
+    typed: Int,
     navController: NavController,
     viewModel: VideoDetailViewModel = hiltViewModel(),
     playerViewModel: VideoPlayerViewModel = hiltViewModel(),
@@ -184,16 +185,17 @@ fun VideoDetailScreen(
                 if (playerUiState.isFullscreen) {
                     VideoPlayerView(
                         isFullscreen = playerUiState.isFullscreen,
+                        isOrientationFullscreen = playerUiState.isOrientationFullscreen,
                         onFullscreenToggle = {
                             playerViewModel.toggleFullscreen()
-                            val activity = context as? Activity
-                            activity?.let {
-                                it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                                } else {
-                                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                                }
-                            }
+//                            val activity = context as? Activity
+//                            activity?.let {
+//                                it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+//                                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+//                                } else {
+//                                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+//                                }
+//                            }
                         },
                         onPrevious = { playerViewModel.playPrevious() },
                         onNext = { playerViewModel.playNext() },
@@ -203,6 +205,19 @@ fun VideoDetailScreen(
                         currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
                         currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
                         modifier = Modifier.fillMaxSize(),
+                        onOrientationToggle = {
+                            playerViewModel.toggleOrientationFullscreen()
+//                            playerViewModel.toggleFullscreen()
+//                            playerViewModel.toggleOrientationFullscreen()
+                            val activity = context as? Activity
+                            activity?.let {
+                                it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                    } else {
+                                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                                    }
+                            }
+                        }
                     )
                 } else {
                     Scaffold(
@@ -232,16 +247,17 @@ fun VideoDetailScreen(
                             ) {
                                 VideoPlayerView(
                                     isFullscreen = playerUiState.isFullscreen,
+                                    isOrientationFullscreen = playerUiState.isOrientationFullscreen,
                                     onFullscreenToggle = {
                                         playerViewModel.toggleFullscreen()
-                                        val activity = context as? Activity
-                                        activity?.let {
-                                            it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                                                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                                            } else {
-                                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                                            }
-                                        }
+//                                        val activity = context as? Activity
+//                                        activity?.let {
+//                                            it.requestedOrientation = if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+//                                                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+//                                            } else {
+//                                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+//                                            }
+//                                        }
                                     },
                                     onPrevious = { playerViewModel.playPrevious() },
                                     onNext = { playerViewModel.playNext() },
@@ -250,7 +266,19 @@ fun VideoDetailScreen(
                                     currentTitle = videoDetail.title,
                                     currentGatherTitle = playlistState.gatherList.getOrNull(playlistState.currentGatherIndex)?.gatherTitle,
                                     currentPlayTitle = playlistState.currentPlayList.getOrNull(playlistState.currentPlayIndex)?.title,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onOrientationToggle = {
+                                        playerViewModel.toggleOrientationFullscreen()
+                                        val activity = context as? Activity
+                                        activity?.let {
+                                            it.requestedOrientation =
+                                                if (it.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                                                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                                } else {
+                                                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                                                }
+                                        }
+                                    },
                                 )
 
 
@@ -527,8 +555,8 @@ fun VideoDetailScreen(
                                     RecommendedVideos(
                                         videos = uiState.recommendedVideos,
                                         isLoading = uiState.isLoadingRecommendations,
-                                        onVideoClick = { videoId ->
-                                            navController.navigate("video_detail/$videoId")
+                                        onVideoClick = { videoId, typed ->
+                                            navController.navigate("video_detail/$videoId/$typed")
                                         }
                                     )
 

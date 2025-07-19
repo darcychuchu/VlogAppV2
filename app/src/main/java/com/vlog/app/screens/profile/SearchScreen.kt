@@ -44,7 +44,7 @@ import kotlin.collections.isNotEmpty
 @Composable
 fun SearchScreen(
     onNavigateBack: () -> Unit,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (String, Int) -> Unit,
     searchViewModel: SearchViewModel = hiltViewModel(),
     favoriteViewModel: FavoriteViewModel = hiltViewModel()
 ) {
@@ -275,7 +275,7 @@ fun SearchHistoryItem(
 @Composable
 fun SearchResultsSection(
     results: List<Videos>,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (String, Int) -> Unit,
     favoriteViewModel: FavoriteViewModel
 ) {
     Column(
@@ -296,7 +296,7 @@ fun SearchResultsSection(
             items(results) { video ->
                 SearchVideoCard(
                     video = video,
-                    onClick = { onVideoClick(video.id!!)},
+                    onClick = { onVideoClick(video.id!!,video.isTyped ?: 1)},
                     favoriteViewModel = favoriteViewModel
                 )
             }

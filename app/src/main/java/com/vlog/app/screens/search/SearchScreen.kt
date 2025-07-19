@@ -36,7 +36,7 @@ import kotlin.collections.isNotEmpty
 fun SearchScreen(
     navController: NavController,
     onNavigateBack: () -> Unit,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (String, Int) -> Unit,
     initialQuery: String = "",
     viewModel: SearchViewModel = hiltViewModel(),
     favoriteViewModel: FavoriteViewModel = hiltViewModel()
@@ -158,7 +158,7 @@ fun SearchScreen(
                         video = video,
                         navController = navController,
                         favoriteViewModel = favoriteViewModel,
-                        onClick = { onVideoClick(video.id ?: "") },
+                        onClick = { onVideoClick(video.id ?: "",video.isTyped ?: 1) },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
