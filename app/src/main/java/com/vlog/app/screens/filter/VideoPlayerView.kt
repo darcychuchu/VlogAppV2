@@ -36,7 +36,6 @@ fun VideoPlayerView(
     // Parameters below are mostly driven by ViewModel state or are direct pass-through for controls
     // playUrl: String?, // ViewModel now manages the URL/MediaItem
     isFullscreen: Boolean, // From ViewModel UI State
-    isOrientationFullscreen: Boolean, // From ViewModel UI State - REMOVED
     onFullscreenToggle: () -> Unit, // Calls ViewModel method
     onPrevious: () -> Unit, // Calls ViewModel method
     onNext: () -> Unit, // Calls ViewModel method
@@ -45,6 +44,7 @@ fun VideoPlayerView(
     currentTitle: String?, // From ViewModel PlaylistState
     currentGatherTitle: String?, // From ViewModel PlaylistState
     currentPlayTitle: String?, // From ViewModel PlaylistState
+    isOrientationFullscreen: Boolean, // From ViewModel UI State - REMOVED
     onOrientationToggle: () -> Unit = {} // REMOVED
 ) {
     var showControls by remember { mutableStateOf(true) }

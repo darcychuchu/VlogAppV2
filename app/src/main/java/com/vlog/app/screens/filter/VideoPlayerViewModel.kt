@@ -2,12 +2,21 @@ package com.vlog.app.screens.filter
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.vlog.app.data.followers.histories.watch.WatchHistoryEntity
 import com.vlog.app.data.followers.histories.watch.WatchHistoryRepository
 import com.vlog.app.data.videos.GatherList
@@ -78,14 +87,38 @@ class VideoPlayerViewModel @Inject constructor(
     private var playbackStateJob: Job? = null
     private var positionToRestore: Long = -1L
     private var playWhenReadyToRestore: Boolean = false
+    private var handleAudioFocus: Boolean = true
 
     init {
         initializePlayerInternal()
     }
 
+    @OptIn(UnstableApi::class)
     private fun initializePlayerInternal() {
+        VideoPlayerCacheManager.initialize(context,100*1024*1024)
         if (_exoPlayer == null) {
-            _exoPlayer = ExoPlayer.Builder(context).build().apply {
+            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            _exoPlayer = ExoPlayer.Builder(context)
+                .setSeekBackIncrementMs(10000L)
+                .setSeekForwardIncrementMs(10000L)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AUDIO_CONTENT_TYPE_MOVIE)
+                        .setUsage(C.USAGE_MEDIA)
+                        .build(),
+                    handleAudioFocus,
+                )
+                .apply {
+                    val cache = VideoPlayerCacheManager.getCache()
+                    if (cache != null) {
+                        val cacheDataSourceFactory = CacheDataSource.Factory()
+                            .setCache(cache)
+                            .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context, httpDataSourceFactory))
+                        setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory))
+                    }
+                }
+                .build()
+                .apply {
                 addListener(object : Player.Listener {
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         _uiState.update { it.copy(isPlaying = isPlaying) }

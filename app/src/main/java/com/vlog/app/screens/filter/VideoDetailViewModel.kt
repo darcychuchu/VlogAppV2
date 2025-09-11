@@ -397,11 +397,11 @@ data class VideoDetailUiState(
     val isLoading: Boolean = false,
     val isLoadingGathers: Boolean = false,
     val isLoadingPlayers: Boolean = false,
-    val isLoadingComments: Boolean = false,
     val isLoadingRecommendations: Boolean = false,
     val error: String? = null,
     val watchHistory: WatchHistoryEntity? = null, // 观看历史
     val lastPlayedPosition: Long = 0, // 上次播放位置
+    val isLoadingComments: Boolean = false,
     val comments: List<Comments> = emptyList(), // 评论列表
     val recommendedVideos: List<Videos> = emptyList(), // 推荐视频列表
     val showGatherDialog: Boolean = false, // 是否显示服务商对话框

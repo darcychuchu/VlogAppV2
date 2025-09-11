@@ -108,55 +108,55 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val token = userSessionManager.getAccessToken()
-                // Ensure token is not null or empty, though getAccessToken should handle this or throw.
-                // For robustness, a check here might be good, or ensure getAccessToken() contract.
-                val response = storiesRepository.getGlobalStoriesList(
-                    typed = DEFAULT_STORY_TYPE,
-                    page = currentPage,
-                    size = DEFAULT_PAGE_SIZE,
-                    orderBy = DEFAULT_ORDER_BY,
-                    token = token.toString() // Assuming getAccessToken() returns a non-null, valid token string.
-                )
-
-                Log.d("HomeViewModel", "API响应: code=${response.code}, message=${response.message}, data=${response.data != null}")
-
-                if (response.code == ApiResponseCode.SUCCESS && response.data?.items != null) {
-                    val paginatedResponse = response.data
-                    val newStories = paginatedResponse.items // Assuming PaginatedResponse has 'items'
-
-                    // 添加日志
-                    Log.d("HomeViewModel", "获取到全局列表: ${newStories.size}个, 当前页: $currentPage")
-                    newStories.forEach { story ->
-                        Log.d("HomeViewModel", "内容: id=${story.id}, title=${story.title}, isTyped=${story.isTyped}")
-                    }
-
-                    // 更新列表
-                    if (refresh) {
-                        _storiesList.value = newStories
-                    } else {
-                        _storiesList.value = _storiesList.value + newStories
-                    }
-
-                    // Update pagination info if available from paginatedResponse
-                    // For example: _pagination.value = PaginationInfo(paginatedResponse.currentPage, paginatedResponse.totalPages, ...)
-
-                    // 更新是否有更多数据
-                    _hasMoreData.value = newStories.size == DEFAULT_PAGE_SIZE
-                    // Alternative if PaginatedResponse has hasNextPage or totalPages:
-                    // _hasMoreData.value = paginatedResponse.hasNextPage
-                    // _hasMoreData.value = currentPage < paginatedResponse.totalPages
-
-                    // 更新当前页码 only if data was successfully loaded and there might be more
-                    if (newStories.isNotEmpty() == true) {
-                        currentPage++
-                    }
-
-                } else {
-                    _error.value = response.message ?: "加载失败"
-                    _hasMoreData.value = false // Stop pagination on error
-                    Log.e("HomeViewModel", "加载全局列表失败: ${response.message}")
-                }
+//                val token = userSessionManager.getAccessToken()
+//                // Ensure token is not null or empty, though getAccessToken should handle this or throw.
+//                // For robustness, a check here might be good, or ensure getAccessToken() contract.
+//                val response = storiesRepository.getGlobalStoriesList(
+//                    typed = DEFAULT_STORY_TYPE,
+//                    page = currentPage,
+//                    size = DEFAULT_PAGE_SIZE,
+//                    orderBy = DEFAULT_ORDER_BY,
+//                    token = token.toString() // Assuming getAccessToken() returns a non-null, valid token string.
+//                )
+//
+//                Log.d("HomeViewModel", "API响应: code=${response.code}, message=${response.message}, data=${response.data != null}")
+//
+//                if (response.code == ApiResponseCode.SUCCESS && response.data?.items != null) {
+//                    val paginatedResponse = response.data
+//                    val newStories = paginatedResponse.items // Assuming PaginatedResponse has 'items'
+//
+//                    // 添加日志
+//                    Log.d("HomeViewModel", "获取到全局列表: ${newStories.size}个, 当前页: $currentPage")
+//                    newStories.forEach { story ->
+//                        Log.d("HomeViewModel", "内容: id=${story.id}, title=${story.title}, isTyped=${story.isTyped}")
+//                    }
+//
+//                    // 更新列表
+//                    if (refresh) {
+//                        _storiesList.value = newStories
+//                    } else {
+//                        _storiesList.value = _storiesList.value + newStories
+//                    }
+//
+//                    // Update pagination info if available from paginatedResponse
+//                    // For example: _pagination.value = PaginationInfo(paginatedResponse.currentPage, paginatedResponse.totalPages, ...)
+//
+//                    // 更新是否有更多数据
+//                    _hasMoreData.value = newStories.size == DEFAULT_PAGE_SIZE
+//                    // Alternative if PaginatedResponse has hasNextPage or totalPages:
+//                    // _hasMoreData.value = paginatedResponse.hasNextPage
+//                    // _hasMoreData.value = currentPage < paginatedResponse.totalPages
+//
+//                    // 更新当前页码 only if data was successfully loaded and there might be more
+//                    if (newStories.isNotEmpty() == true) {
+//                        currentPage++
+//                    }
+//
+//                } else {
+//                    Log.e("HomeViewModel", "加载全局列表失败: ${response.message}")
+//                }
+                _error.value = "加载失败"
+                _hasMoreData.value = false // Stop pagination on error
             } catch (e: Exception) {
                 _error.value = "加载失败: ${e.message}"
                 _hasMoreData.value = false // Stop pagination on exception

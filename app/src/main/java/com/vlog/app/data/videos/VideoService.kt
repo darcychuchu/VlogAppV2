@@ -12,7 +12,7 @@ interface VideoService {
 
     @GET(Constants.ENDPOINT_VIDEO_FILTER)
     suspend fun getVideosFilter(
-        @Query("typed") typed: Int = 0,
+        @Query("typed") typed: Int = 5,
         @Query("cate") cate: String? = null,
         @Query("year") year: Int = 0,
         @Query("order_by") orderBy: Int = 0,

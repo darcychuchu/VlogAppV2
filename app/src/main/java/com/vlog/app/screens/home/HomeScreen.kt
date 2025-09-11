@@ -26,6 +26,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -217,36 +218,56 @@ fun DiscoverContent(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        // 列表内容
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            items(storiesList) { story ->
-                StoryItem(
-                    story = story,
-                    onClick = {
-
-
-                        // 根据isTyped值决定导航到哪个页面
-                        // Null checks for id are important.
-                        // Using nickName as primary for username, fallback to createdBy, then "unknown".
-                        val storyId = story.id
-                        val username = story.nickName ?: story.createdBy ?: "unknown"
-                        if (storyId != null) {
-                            onNavigateToStoryDetail(username, storyId)
-                        }
-                        // If storyId is null, onClick does nothing, which is reasonable.
-                    },
-                    onUserClick = {
-                        // Using nickName as primary for username, fallback to createdBy, then "unknown".
-                        val username = story.nickName ?: story.createdBy ?: "unknown"
-                        onNavigateToUserProfile(username)
-                    }
-                )
-            }
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "暂无内容",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "等待用户发布新的内容",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
+        // 列表内容
+//        LazyColumn(
+//            modifier = Modifier.fillMaxSize(),
+//            state = listState
+//        ) {
+//
+//
+//
+////            items(storiesList) { story ->
+////                StoryItem(
+////                    story = story,
+////                    onClick = {
+////
+////
+////                        // 根据isTyped值决定导航到哪个页面
+////                        // Null checks for id are important.
+////                        // Using nickName as primary for username, fallback to createdBy, then "unknown".
+////                        val storyId = story.id
+////                        val username = story.nickName ?: story.createdBy ?: "unknown"
+////                        if (storyId != null) {
+////                            onNavigateToStoryDetail(username, storyId)
+////                        }
+////                        // If storyId is null, onClick does nothing, which is reasonable.
+////                    },
+////                    onUserClick = {
+////                        // Using nickName as primary for username, fallback to createdBy, then "unknown".
+////                        val username = story.nickName ?: story.createdBy ?: "unknown"
+////                        onNavigateToUserProfile(username)
+////                    }
+////                )
+////            }
+//        }
 
     }
 }
